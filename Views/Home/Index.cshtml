@@ -1,0 +1,596 @@
+﻿@{
+    ViewData["Title"] = "大廳";
+}
+
+<style>
+    body {
+        margin: 0;
+        font-family: 'Noto Sans TC', sans-serif;
+        color: #fff;
+        overflow-x: hidden;
+    }
+
+    /* 頁首文字 */
+    .lobby-header {
+        text-align: center;
+        margin-top: 40px;
+    }
+
+    .lobby-title {
+        font-size: 40px;
+        letter-spacing: 8px;
+        margin-bottom: 8px;
+        text-shadow: 0 0 18px rgba(255,255,255,0.55);
+    }
+
+    .lobby-subtitle {
+        opacity: 0.8;
+        letter-spacing: 4px;
+        font-size: 14px;
+    }
+
+    /* 中間主區塊：左按鈕 / 水晶球 / 右按鈕 */
+    .lobby-main {
+        margin-top: 80px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 200px;
+    }
+
+    /* 左右按鈕本體（改回中等大小） */
+    .lobby-btn {
+        position: relative;
+        width: 280px; /* 按鈕寬：想再大就改這個數字 */
+        height: 420px; /* 按鈕高：想更修長就拉高這個 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #fff;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        transition: transform .25s ease, filter .25s ease;
+    }
+
+        /* 邊框圖：用 scale 放大，不會影響整排位置 */
+        .lobby-btn::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: url('/images/frame-border.png') center/contain no-repeat;
+            pointer-events: none;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.7));
+            transform: scale(1.6); /* ← 想讓邊框更大就調這裡 */
+            transform-origin: center center; /* 以中心放大，不會偏移 */
+        }
+
+
+    /* ⭐ 真正直書，整個區塊塞在邊框中間 */
+    .lobby-btn-text {
+        position: relative;
+        writing-mode: vertical-rl; /* 直排：由右往左 */
+        text-orientation: upright; /* 每個字直立 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1.4;
+        letter-spacing: 0.3em;
+        text-align: center;
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    }
+
+        /* 上面的 emoji 跟下面文字稍微拉開一點 */
+        .lobby-btn-text .btn-emoji {
+            font-size: 32px;
+            margin-bottom: 0.8em;
+        }
+
+        .lobby-btn-text .btn-label {
+            /* 直書本體，可以再加字距之類的 */
+        }
+
+
+    /* 左右按鈕發光顏色 */
+    .btn-intro::before {
+        filter: drop-shadow(0 0 18px rgba(90,160,255,0.95));
+    }
+
+    .btn-divination::before {
+        filter: drop-shadow(0 0 18px rgba(255,120,90,0.95));
+    }
+
+    /* hover 效果：稍微浮起＋加強發光 */
+    .lobby-btn:hover {
+        transform: translateY(-6px) scale(1.04);
+    }
+
+    .btn-intro:hover::before {
+        filter: drop-shadow(0 0 26px rgba(120,190,255,1));
+    }
+
+    .btn-divination:hover::before {
+        filter: drop-shadow(0 0 26px rgba(255,150,120,1));
+    }
+
+
+
+    /* 水晶球外層容器 */
+    .crystal-wrapper {
+        position: relative;
+        width: 340px;
+        height: 340px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none; /* 不要吃掉 hover 事件 */
+    }
+
+    /* 水晶球圖片本體 */
+    .crystal-img {
+        position: relative;
+        width: 100%;
+        height: auto;
+        z-index: 2;
+        filter: drop-shadow(0 18px 45px rgba(0,0,0,0.9));
+        transition: transform .35s ease;
+    }
+
+    /* 預設的柔和紫色光暈 */
+    .crystal-wrapper::before {
+        content: "";
+        position: absolute;
+        inset: -45%;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 35%, rgba(140,110,255,0.85), rgba(40,10,80,0.15) 55%, transparent 70%);
+        box-shadow: 0 0 60px rgba(180,150,255,0.75), 0 0 140px rgba(120,90,255,0.7);
+        filter: blur(4px);
+        opacity: 0.95;
+        z-index: 0;
+        transition: background .35s ease, box-shadow .35s ease, opacity .35s ease;
+    }
+
+    /* 微微呼吸動畫 */
+    @@keyframes crystalBreath {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.03);
+        }
+    }
+
+    /* 水晶球外層容器 */
+    .crystal-wrapper {
+        position: relative;
+        width: 340px; /* 球整體變大 */
+        height: 340px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        animation: crystalBreath 4s ease-in-out infinite;
+        position: relative;
+        transform: translate(0px, 20px);
+    }
+
+    /* 水晶球圖片本體 */
+    .crystal-img {
+        position: relative;
+        top: 20px;
+        width: 200%; /* 球占容器 78%，看起來比較大 */
+        height: auto;
+        z-index: 2;
+        filter: drop-shadow(0 18px 45px rgba(0,0,0,0.9));
+        transition: transform .35s ease;
+    }
+
+    /* 預設的柔和紫色光暈：縮小到剛好包住水晶球 */
+    .crystal-wrapper::before {
+        content: "";
+        position: absolute;
+        inset: 10%; /* 原本是 -45%，改成 18% → 光圈縮小 */
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 35%, rgba(140,110,255,0.95), rgba(40,10,80,0.0) 75%);
+        box-shadow: 0 0 40px rgba(180,150,255,0.85), 0 0 70px rgba(120,90,255,0.7);
+        filter: blur(3px);
+        opacity: 1;
+        z-index: 0;
+        transition: background .35s ease, box-shadow .35s ease, opacity .35s ease;
+    }
+
+    /* 呼吸動畫 */
+    @@keyframes crystalBreath {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.03);
+        }
+    }
+
+    /* ===== hover 時改變光暈顏色（記得一起更新） ===== */
+    /* 左邊：藍光 */
+    .crystal-wrapper.glow-blue::before {
+        background: radial-gradient(circle at 50% 35%, rgba(110,190,255,0.98), rgba(20,50,110,0.0) 75%);
+        box-shadow: 0 0 50px rgba(110,190,255,1), 0 0 90px rgba(60,140,255,0.95);
+    }
+
+    /* 右邊：紅光 */
+    .crystal-wrapper.glow-red::before {
+        background: radial-gradient(circle at 50% 35%, rgba(255,130,120,0.99), rgba(150,40,40,0.0) 75%);
+        box-shadow: 0 0 50px rgba(255,140,120,1), 0 0 90px rgba(255,90,70,0.95);
+    }
+
+    /* hover 時球本身也稍微放大 */
+    .crystal-wrapper.glow-blue .crystal-img,
+    .crystal-wrapper.glow-red .crystal-img {
+        transform: scale(1.06);
+    }
+
+    /* ===== 水晶球噴出的星星粒子 ===== */
+    .crystal-star {
+        position: absolute;
+        left: 50%;
+        top: 50%; /* 以水晶球中心當基準 */
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        pointer-events: none;
+        /* ⭐ 一開始就先位移到「球邊邊」(sx, sy)，再用 scale 縮放 */
+        transform: translate( calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, 0px)) ) scale(0.6);
+        opacity: 0;
+        animation: crystalStarFly 0.9s ease-out forwards;
+        z-index: 3;
+    }
+
+        /* 藍色星星（左邊按鈕） */
+        .crystal-star.star-blue {
+            background: radial-gradient(circle, #ffffff, #bfe5ff, rgba(120,190,255,0));
+            box-shadow: 0 0 10px rgba(120,190,255,0.95);
+        }
+
+        /* 紅色星星（右邊按鈕） */
+        .crystal-star.star-red {
+            background: radial-gradient(circle, #ffffff, #ffd0c0, rgba(255,150,130,0));
+            box-shadow: 0 0 10px rgba(255,150,130,0.95);
+        }
+
+    /* ⭐ 動畫：從「球邊邊」往外再飛一段距離 */
+    @@keyframes crystalStarFly {
+        0% {
+            opacity: 1;
+            transform: translate( calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, 0px)) ) scale(0.8);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translate( calc(-50% + var(--sx, 0px) + var(--tx, 0px)), calc(-50% + var(--sy, 0px) + var(--ty, 0px)) ) scale(0.2);
+        }
+    }
+
+
+    /* === 水晶球底座的魔法陣 === */
+    .magic-circle {
+        position: absolute;
+        left: 50%;
+        bottom: -310px; /* 控制魔法陣離底座多近，之後可微調 */
+        transform: translateX(-50%) scale(2.5);
+        width: 420px;
+        height: 420px;
+        background: url('/images/magic-circle.png') center/contain no-repeat;
+        opacity: 0; /* 一開始隱藏 */
+        pointer-events: none;
+        z-index: 1; /* 在水晶球後面或前面可自己調 */
+        filter: drop-shadow(0 0 25px rgba(0,255,255,0.75));
+        transition: opacity .45s ease, transform .45s ease, filter .45s ease;
+    }
+
+        .magic-circle.active {
+            opacity: 1;
+            transform: translateX(-50%) scale(2.0);
+            animation: magicCircleBreath 2.8s ease-in-out infinite;
+        }
+
+    @@keyframes magicCircleBreath {
+        0%, 100% {
+            filter: drop-shadow(0 0 28px rgba(0,255,255,0.7));
+        }
+
+        50% {
+            filter: drop-shadow(0 0 60px rgba(0,255,255,1));
+        }
+    }
+
+    /* === 星空背景層，鋪滿整個畫面 === */
+    .star-layer {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 0; /* 在背景上、內容下 */
+    }
+
+    /* 讓主內容浮在星空之上 */
+    .lobby-header,
+    .lobby-main {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* 小星星 */
+    .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.95);
+        box-shadow: 0 0 6px rgba(255,255,255,0.9);
+        opacity: 0.4;
+        animation: twinkle 4s ease-in-out infinite;
+    }
+
+    /* 閃爍效果 */
+    @@keyframes twinkle {
+        0%, 100% {
+            opacity: 0.1;
+            transform: scale(0.7);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1.4);
+        }
+    }
+
+    /* 流星容器（負責位置與角度） */
+    .shooting-star {
+        position: absolute;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+        /* 流星本體 */
+        .shooting-star span {
+            display: block;
+            width: 140px;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0));
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.9));
+            transform-origin: 0 50%;
+            animation: meteor 1.3s ease-out forwards;
+        }
+
+    /* 流星從短變長，往前滑動再淡出 */
+    @@keyframes meteor {
+        0% {
+            opacity: 1;
+            transform: scaleX(0);
+        }
+
+        15% {
+            transform: scaleX(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateX(320px) scaleX(0.2);
+        }
+    }
+
+</style>
+<div id="starLayer" class="star-layer"></div>
+
+
+<div class="lobby-header">
+    <div class="lobby-title">歡迎來到塔羅命運之廳</div>
+    <div class="lobby-subtitle">請選擇您的道路</div>
+</div>
+
+<div class="lobby-main">
+    <!-- 左邊：塔羅牌介紹 -->
+    <a id="btnIntro"
+       asp-controller="Tarot"
+       asp-action="Introduction"
+       class="lobby-btn btn-intro">
+        <span class="lobby-btn-text">
+            <span class="btn-label">塔羅牌介紹</span>
+            <span class="btn-emoji">📖</span>
+
+        </span>
+    </a>
+
+
+    <!-- 中央水晶球（順便把魔法陣放進來） -->
+    <div id="crystalWrapper" class="crystal-wrapper">
+
+        <img src="~/images/crystal-ball.png" alt="水晶球" class="crystal-img" />
+        <div id="magicCircle" class="magic-circle"></div>
+    </div>
+
+    <!-- 右邊：開始占卜 -->
+    <a id="btnDivination"
+       asp-controller="Tarot"
+       asp-action="DrawCards"
+       class="lobby-btn btn-divination">
+        <span class="lobby-btn-text">
+            <span class="btn-label">開始占卜</span>
+            <span class="btn-emoji">🔮</span>
+        </span>
+    </a>
+
+
+</div>
+<script>
+    // ⭐ 流星頻率（全域）
+    let meteorMin = 700;
+    let meteorMax = 1900;
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const crystal = document.getElementById("crystalWrapper");
+        const introBtn = document.getElementById("btnIntro");
+        const divaBtn  = document.getElementById("btnDivination");
+
+        // 噴星星的函式
+        function burstCrystalStars(color) {
+            const count = 25;           // 一次噴幾顆
+            const ringRadius = 170;     // 一開始離中心多遠（球邊邊）
+            const extraDistanceMin = 60;
+            const extraDistanceMax = 120;
+
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement("div");
+                star.classList.add("crystal-star");
+
+                // 顏色
+                if (color === "blue") {
+                    star.classList.add("star-blue");
+                } else if (color === "red") {
+                    star.classList.add("star-red");
+                }
+
+                // 隨機角度
+                const angle = Math.random() * Math.PI * 2;
+
+                // 球邊邊的位置（起點）
+                const sx = Math.cos(angle) * ringRadius;
+                const sy = Math.sin(angle) * ringRadius;
+
+                // 再往外飛一段距離
+                const extraDist = extraDistanceMin + Math.random() * (extraDistanceMax - extraDistanceMin);
+                const tx = Math.cos(angle) * extraDist;
+                const ty = Math.sin(angle) * extraDist;
+
+                // 丟到 CSS 變數
+                star.style.setProperty("--sx", sx + "px");
+                star.style.setProperty("--sy", sy + "px");
+                star.style.setProperty("--tx", tx + "px");
+                star.style.setProperty("--ty", ty + "px");
+
+                crystal.appendChild(star);
+
+                // 動畫結束移除
+                setTimeout(() => {
+                    star.remove();
+                }, 1000);
+            }
+        }
+
+        // 左邊 hover：藍光＋星星
+        introBtn.addEventListener("mouseenter", () => {
+            crystal.classList.add("glow-blue");
+            crystal.classList.remove("glow-red");
+            burstCrystalStars("blue");
+            meteorMin = 150;
+    meteorMax = 300;
+
+        });
+        introBtn.addEventListener("mouseleave", () => {
+            crystal.classList.remove("glow-blue");
+            meteorMin = 500;
+    meteorMax = 1500;
+        });
+
+        // 右邊 hover：紅光＋星星
+        divaBtn.addEventListener("mouseenter", () => {
+            crystal.classList.add("glow-red");
+            crystal.classList.remove("glow-blue");
+            burstCrystalStars("red");
+            meteorMin = 150;
+    meteorMax = 300;
+        });
+        divaBtn.addEventListener("mouseleave", () => {
+            crystal.classList.remove("glow-red");
+            meteorMin = 500;
+    meteorMax = 1500;
+        });
+    });
+</script>
+
+
+<script>
+    (function () {
+        const magicCircle = document.getElementById("magicCircle");
+        if (!magicCircle) return;
+
+        const introBtn = document.getElementById("btnIntro");
+        const divaBtn  = document.getElementById("btnDivination");
+
+        function bind(btn) {
+            if (!btn) return;
+            btn.addEventListener("mouseenter", () => {
+                magicCircle.classList.add("active");
+            });
+            btn.addEventListener("mouseleave", () => {
+                magicCircle.classList.remove("active");
+            });
+        }
+
+        bind(introBtn);
+        bind(divaBtn);
+    })();
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const starLayer = document.getElementById("starLayer");
+
+        /* === 建立背景小星星 === */
+        const STAR_COUNT = 120; // 星星數量，想多一點可以調大
+        for (let i = 0; i < STAR_COUNT; i++) {
+            const s = document.createElement("div");
+            s.className = "star";
+
+            const size = 1 + Math.random() * 2; // 1~3px
+            s.style.width = size + "px";
+            s.style.height = size + "px";
+
+            s.style.left = Math.random() * 100 + "%";
+            s.style.top = Math.random() * 100 + "%";
+
+            s.style.animationDelay = (Math.random() * 6) + "s";
+            s.style.animationDuration = (3 + Math.random() * 5) + "s";
+
+            starLayer.appendChild(s);
+        }
+
+        /* === 不定時產生流星 === */
+            function spawnMeteor() {
+        const meteor = document.createElement("div");
+        meteor.className = "shooting-star";
+
+        const line = document.createElement("span");
+        meteor.appendChild(line);
+
+        const startTop = Math.random() * 40;
+        const startLeft = 5 + Math.random() * 90;
+        const angle = 25 + Math.random() * 20;
+
+        meteor.style.top = startTop + "%";
+        meteor.style.left = startLeft + "%";
+        meteor.style.transform = "rotate(" + angle + "deg)";
+
+        starLayer.appendChild(meteor);
+
+        setTimeout(() => meteor.remove(), 1500);
+
+        // ⭐ 這裡才是真正控制頻率的地方
+        const nextIn = meteorMin + Math.random() * (meteorMax - meteorMin);
+        setTimeout(spawnMeteor, nextIn);
+    }
+
+
+        // 第一顆流星延遲 2~6 秒出現
+        setTimeout(spawnMeteor, 500 + Math.random() * 1000);
+    });
+</script>

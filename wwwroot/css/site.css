@@ -1,0 +1,110 @@
+﻿
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+/* ===== 全站占卜背景系統 ===== */
+.site-header,
+.main-content,
+footer {
+    position: relative;
+    z-index: 2;
+}
+
+.arcane-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: radial-gradient(circle at 50% -20%, #3a2a6a 0%, #12081f 40%, #020008 75%);
+    overflow: hidden;
+}
+
+/* ✨ 星塵層（極淡） */
+.arcane-stars {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(1px 1px at 20% 30%, rgba(246,211,101,.25), transparent), radial-gradient(1px 1px at 70% 40%, rgba(200,170,255,.2), transparent), radial-gradient(1px 1px at 40% 80%, rgba(246,211,101,.15), transparent), radial-gradient(1px 1px at 85% 75%, rgba(200,170,255,.15), transparent);
+    background-size: 300px 300px;
+    animation: starDrift 90s linear infinite;
+    opacity: .6;
+}
+
+/* 🔮 神秘符印層（非常淡） */
+.arcane-sigil {
+    position: absolute;
+    inset: -20%;
+    background: repeating-radial-gradient( circle, rgba(246,211,101,.04) 0px, rgba(246,211,101,.04) 1px, transparent 1px, transparent 24px );
+    mask-image: radial-gradient(circle at center, black 30%, transparent 70%);
+    opacity: .35;
+}
+
+/* ⭐ 星塵流動動畫 */
+@keyframes starDrift {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-300px);
+    }
+}
+
+/* 確保內容在背景之上 */
+.main-content {
+    position: relative;
+    z-index: 1;
+}
+main.main-content {
+    position: relative;
+    z-index: 2;
+}
+/* 🔥 強制讓 body 不干擾背景層 */
+body {
+    background: transparent !important;
+}
+
+/* 🔮 讓主要卡片半透明，背景才會出來 */
+.history-item,
+.analysis-page,
+.summary-block,
+.card-panel {
+    background: radial-gradient(circle at top, rgba(60, 40, 110, 0.82), rgba(15, 8, 30, 0.82) );
+    backdrop-filter: blur(2px);
+}
+/* 🚑 Bootstrap container 必須透明，背景才看得到 */
+.container,
+.container-fluid {
+    background: transparent !important;
+}
+/* 卡牌列表寬度限制（回到以前大小） */
+.cardlist-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+}

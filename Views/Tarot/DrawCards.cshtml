@@ -1,0 +1,1212 @@
+﻿@model List<占卜.Models.TarotCard>
+@{
+    ViewData["Title"] = "開始占卜";
+}
+
+<style>
+    /* ====== 整頁背景：塔羅牌布 ====== */
+    html, body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'Noto Sans TC', sans-serif;
+        color: #fdf4ff;
+        background: #000; /* 影片載不到時的備用底色 */
+    }
+
+    /* ====== 全螢幕背景影片 ====== */
+    html, body {
+        margin: 0;
+        min-height: 100vh;
+        background: #000;
+    }
+
+    .bg-video {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        z-index: 0; /* 不要用 -1 */
+        pointer-events: none;
+    }
+
+    .page-content {
+        position: relative;
+        z-index: 1; /* 確保內容在影片上面 */
+    }
+
+    /* 正常滿版（不旋轉時用這個） */
+    .bg-video video.bgvid {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.8);
+    }
+
+        /* 需要把「直向影片」轉成橫向背景就加這個 class */
+        .bg-video video.bgvid.rotate90 {
+            inset: auto;
+            top: 50%;
+            left: 50%;
+            width: 100vh; /* 旋轉後寬高對調 */
+            height: 100vw;
+            transform: translate(-50%, -50%) rotate(90deg);
+            transform-origin: center;
+            object-fit: cover;
+        }
+
+
+    .hidden {
+        display: none !important;
+    }
+
+    h2 {
+        text-align: center;
+        margin-top: 32px;
+        font-size: 40px;
+        letter-spacing: 6px;
+        text-shadow: 0 0 18px rgba(0,0,0,0.8);
+    }
+
+    /* ========== 進入時的規則視窗 ========== */
+    .rule-modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+    }
+
+    .rule-backdrop {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, rgba(30,15,70,0.95), rgba(0,0,0,0.98));
+        backdrop-filter: blur(4px);
+    }
+
+    .rule-content {
+        position: relative;
+        z-index: 1;
+        width: min(520px, 90vw);
+        padding: 28px 30px 22px;
+        border-radius: 18px;
+        background: rgba(15, 8, 40, 0.97);
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    }
+
+    .rule-title {
+        font-size: 24px;
+        letter-spacing: 4px;
+        margin-bottom: 14px;
+    }
+
+    .rule-list {
+        margin: 0 0 18px;
+        padding-left: 20px;
+        line-height: 1.7;
+        font-size: 15px;
+    }
+
+        .rule-list li + li {
+            margin-top: 6px;
+        }
+
+    .rule-note {
+        font-size: 14px;
+        opacity: 0.85;
+        margin-bottom: 18px;
+    }
+
+    .rule-btn-row {
+        text-align: right;
+    }
+
+    .btn-primary {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 22px;
+        font-size: 15px;
+        letter-spacing: 2px;
+        cursor: pointer;
+        background: linear-gradient(90deg,#f6d365,#fda085);
+        color: #241323;
+        box-shadow: 0 0 18px rgba(253,160,133,0.65);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 22px rgba(253,160,133,0.9);
+        }
+
+    /* ========== 主內容：問題 + 抽牌模式 ========== */
+
+    .draw-wrapper {
+        max-width: 960px;
+        margin: 40px auto 60px;
+        padding: 24px 30px 32px;
+        border-radius: 20px;
+        background: rgba(5, 2, 18, 0.88);
+        box-shadow: 0 0 26px rgba(0,0,0,0.9);
+        backdrop-filter: blur(4px);
+    }
+
+    .section-title {
+        font-size: 18px;
+        letter-spacing: 3px;
+        margin-bottom: 10px;
+    }
+
+    .section-hint {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-bottom: 12px;
+    }
+
+    .question-area textarea {
+        width: 100%;
+        min-height: 100px;
+        resize: vertical;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.15);
+        padding: 10px 12px;
+        background: rgba(8,4,25,0.95);
+        color: #fff;
+        font-size: 15px;
+    }
+
+        .question-area textarea:focus {
+            outline: none;
+            border-color: #fda085;
+            box-shadow: 0 0 12px rgba(253,160,133,0.6);
+        }
+
+    .mode-grid {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .mode-card {
+        position: relative;
+        padding: 16px 14px 14px;
+        border-radius: 16px;
+        background: radial-gradient(circle at top left,#291d4d,#12091f);
+        border: 1px solid rgba(255,255,255,0.16);
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+        .mode-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 22px rgba(160,130,255,0.8);
+        }
+
+        .mode-card.active {
+            border-color: #fda085;
+            box-shadow: 0 0 26px rgba(253,160,133,0.9);
+        }
+
+    .mode-name {
+        font-size: 17px;
+        letter-spacing: 2px;
+        margin-bottom: 6px;
+    }
+
+    .mode-brief {
+        font-size: 13px;
+        opacity: 0.9;
+        line-height: 1.6;
+    }
+
+    .mode-tag {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.08);
+        opacity: 0.85;
+    }
+
+    .mode-card input[type="radio"] {
+        display: none;
+    }
+
+    .draw-footer {
+        margin-top: 26px;
+        text-align: right;
+    }
+
+    .btn-secondary {
+        border-radius: 999px;
+        padding: 7px 18px;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: transparent;
+        color: #fdf4ff;
+        margin-right: 10px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+    /* ========== 卡牌扇形進場動畫區 ========== */
+
+    .card-fan-section {
+        max-width: 1100px;
+        margin: 40px auto 80px;
+        padding: 24px 30px 40px;
+        border-radius: 20px;
+        /* 原本是 0.92，改淡一點 */
+        background: rgba(5, 2, 18, 0.65);
+        box-shadow: 0 0 26px rgba(0,0,0,0.9);
+        text-align: center;
+        backdrop-filter: blur(4px);
+    }
+
+
+    .card-fan-title {
+        font-size: 20px;
+        letter-spacing: 3px;
+        margin-bottom: 8px;
+    }
+
+    .card-fan-subtitle {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    .card-fan {
+        position: relative;
+        width: 100%;
+        max-width: 960px; /* 扇形更寬一點 */
+        height: 420px; /* 扇形高度拉高，避免卡到上方文字 */
+        margin: 26px auto 10px;
+    }
+
+    /* 牌變大 + 用 CSS 變數控制高度弧線（--lift） */
+    /* ========== 卡牌扇形：單張牌（定位與扇形 transform） ========== */
+    .fan-card {
+        position: absolute;
+        left: 50%;
+        top: 72%;
+        width: 180px;
+        height: 320px;
+        transform-origin: 50% 170%;
+        opacity: 0;
+        /* 互動用變數 */
+        --scale: 1;
+        --hoverLift: 0%;
+        /* 進場動畫 */
+        transform: translate(calc(-50% + var(--shift, 0px)), 10%) scale(0.25) rotate(var(--angle, 0deg));
+        transition: transform .6s ease, opacity .6s ease;
+        perspective: 1200px;
+        pointer-events: none; /* 沒展開前不能點 */
+    }
+
+        .fan-card.show {
+            opacity: 1;
+            pointer-events: auto;
+            cursor: pointer;
+            transform: translate( calc(-50% + var(--shift, 0px)), calc(var(--lift, -55%) - var(--hoverLift)) ) scale(var(--scale)) rotate(var(--angle, 0deg));
+        }
+
+            /* hover：微微發光 + 突出一點 */
+            .fan-card.show:not(.picked):not(.disabled):hover {
+                z-index: 999;
+                --scale: 1.06;
+                --hoverLift: 2.5%;
+            }
+
+                .fan-card.show:not(.picked):not(.disabled):hover .tarot-shell {
+                    box-shadow: 0 0 28px rgba(246, 211, 101, 0.55), 0 14px 30px rgba(0,0,0,0.9);
+                }
+
+        /* 被挑走後：原位置消失 */
+        .fan-card.picked {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* 抽滿後：其他牌變暗不可點 */
+        .fan-card.disabled {
+            opacity: 0.25 !important;
+            pointer-events: none !important;
+            filter: saturate(0.6);
+        }
+
+    /* ========== 翻牌結構（正反面） ========== */
+    .tarot-shell {
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 26px rgba(0,0,0,0.9);
+    }
+
+    .tarot-inner {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 650ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .tarot-face {
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        backface-visibility: hidden;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain; /* ★ 這行最重要 */
+        background-color: #000; /* 卡片周圍留黑邊，比較好看 */
+    }
+
+    .tarot-back {
+        background: url('/images/CardBacks.jpg') center/cover;
+    }
+
+    .tarot-front {
+        /* 你原本就有這段 */
+        background: var(--front-image, radial-gradient(circle at 30% 30%, #7b4dd6, #1a0f2e)) center/cover;
+        transform: rotateY(180deg);
+    }
+
+        /* ★ 正位／逆位：逆位就多轉 180 度（上下顛倒） */
+        .tarot-front.reversed {
+            transform: rotateY(180deg) rotate(180deg);
+        }
+
+
+    /* 翻面狀態 */
+    .fan-card.is-flipped .tarot-inner {
+        transform: rotateY(180deg);
+    }
+
+    /* ========== 抽到的牌（頁面底部） ========== */
+    .picked-area {
+        margin-top: 26px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .picked-title {
+        font-size: 16px;
+        letter-spacing: 2px;
+        opacity: 0.9;
+        margin-bottom: 14px;
+    }
+
+    .picked-slots {
+        display: flex;
+        justify-content: center;
+        gap: 28px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .picked-slot {
+        width: 220px;
+    }
+
+    .slot-label {
+        font-size: 13px;
+        letter-spacing: 2px;
+        opacity: 0.8;
+        margin-bottom: 10px;
+    }
+
+    .slot-card {
+        width: 220px;
+        height: 400px;
+        border-radius: 14px;
+        border: 1px dashed rgba(255,255,255,0.25);
+        background: rgba(0,0,0,0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative; /* ★ 為了放光效 */
+        overflow: hidden; /* ★ 讓光不跑出邊界 */
+    }
+
+    /* 讓光貼在卡片正面 */
+    .tarot-shell {
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 26px rgba(0,0,0,0.9);
+        position: relative; /* ★ shine 用 */
+    }
+
+
+    .slot-name {
+        margin-top: 10px;
+        font-size: 18px; /* ← 字體變大 */
+        font-weight: 700; /* ← 加粗 */
+        letter-spacing: 3px; /* ← 字距再開一點 */
+        text-align: center;
+        opacity: 0.97;
+    }
+
+
+    .analysis-area {
+        margin-top: 28px;
+        text-align: center;
+    }
+
+    .analysis-btn {
+        margin-top: 4px;
+        font-size: 15px;
+        letter-spacing: 3px;
+        padding: 9px 26px;
+    }
+
+
+    /* 抽 1 張：只顯示中間，並放大一點 */
+    .picked-slots[data-count="1"] .picked-slot[data-slot="left"],
+    .picked-slots[data-count="1"] .picked-slot[data-slot="right"] {
+        display: none;
+    }
+
+    .picked-slots[data-count="1"] .picked-slot[data-slot="center"] {
+        width: 260px;
+    }
+
+        .picked-slots[data-count="1"] .picked-slot[data-slot="center"] .slot-card {
+            width: 260px;
+            height: 420px;
+            border-style: solid;
+        }
+
+    /* 結果卡：放進槽位時要吃滿槽位，不要被 fan-card 的定位影響 */
+    .fan-card.result-card {
+        position: relative !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        transform: none !important;
+        opacity: 1 !important;
+        pointer-events: none !important;
+    }
+
+
+
+    .card-draw-count {
+        margin-top: 22px;
+        font-size: 16px;
+        letter-spacing: 2px;
+    }
+
+        .card-draw-count span {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f6d365;
+        }
+
+    /* ==== 抽完牌後，卡片上閃過的光條 ==== */
+    .shine-bar {
+        position: absolute;
+        top: -20%;
+        bottom: -20%;
+        width: 45px; /* 光條寬度 */
+        left: -60%; /* 起點在左邊外面 */
+        background: linear-gradient( 120deg, rgba(255,255,255,0), rgba(255,255,255,0.9), rgba(255,255,255,0) );
+        opacity: 0;
+        pointer-events: none;
+        transform: skewX(-20deg);
+    }
+
+    @@keyframes tarotShineSweep {
+        0% {
+            left: -60%;
+            opacity: 0;
+        }
+
+        15% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 1;
+            left: 50%;
+        }
+
+        100% {
+            left: 130%;
+            opacity: 0;
+        }
+    }
+
+    .shine-bar.run {
+        animation: tarotShineSweep 0.8s ease-out forwards;
+    }
+
+    /* ===== 滑鼠星星特效 ===== */
+    .mouse-star {
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        width: 10px;
+        height: 10px;
+        background: radial-gradient( circle, #fff6b0 0%, #ffd24d 40%, #ff9f1a 70%, rgba(255,159,26,0) 72% );
+        clip-path: polygon( 50% 0%, 61% 35%, 100% 50%, 61% 65%, 50% 100%, 39% 65%, 0% 50%, 39% 35% );
+        animation: starFade 0.8s ease-out forwards;
+    }
+
+    @@keyframes starFade {
+        0% {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(0.3) rotate(25deg); /* 隨便一個你喜歡的效果 */
+        }
+    }
+</style>
+<div class="bg-video" aria-hidden="true">
+    <video autoplay muted loop playsinline preload="auto" class="bgvid rotate90">
+        <source src="@Url.Content("~/videos/tarot-bg.mp4")" type="video/mp4" />
+        影片無法播放
+    </video>
+</div>
+
+<h2>開始占卜</h2>
+
+<!-- ========== 進入頁面先跳出的規則視窗 ========== -->
+<div id="ruleModal" class="rule-modal">
+    <div class="rule-backdrop"></div>
+    <div class="rule-content">
+        <div class="rule-title">抽牌前的小提醒</div>
+        <ul class="rule-list">
+            <li>先在心中明確想好這次要詢問的「一個重點問題」。</li>
+            <li>問題盡量具體，例如：「我應該如何準備面試？」比「我未來會不會成功？」更好解讀。</li>
+            <li>在抽牌前靜下來深呼吸三次，把注意力放在你的問題上。</li>
+        </ul>
+        <div class="rule-note">
+            規則看完後，按下「我準備好了」關閉視窗，就會出現提問欄位與抽牌模式選擇。
+        </div>
+        <div class="rule-btn-row">
+            <button id="ruleCloseBtn" type="button" class="btn-primary">我準備好了</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 主內容：問題 + 抽牌模式 ========== -->
+<div id="drawFormSection" class="draw-wrapper hidden">
+    <div class="question-area">
+        <div class="section-title">1. 請寫下這次想問的問題</div>
+        <div class="section-hint">
+            範例：<br />
+            ・我應該如何準備接下來的考試？<br />
+            ・目前這段關係，我可以怎麼調整自己的想法？<br />
+            ・在工作上，我接下來一年最需要留意的是什麼？
+        </div>
+        <textarea id="questionInput" placeholder="在這裡輸入你的問題…"></textarea>
+    </div>
+
+    <div class="mode-area">
+        <div class="section-title" style="margin-top:22px;">2. 選擇這次的抽牌模式</div>
+        <div class="section-hint">
+            先選一種最符合你這次問題的牌陣，之後再進入實際抽牌畫面。
+        </div>
+
+        <div class="mode-grid">
+            <!-- 模式 1：單張指引 -->
+            <label class="mode-card" data-mode="single">
+                <input type="radio" name="DrawMode" value="single" />
+                <div class="mode-tag">適合：快速占卜</div>
+                <div class="mode-name">單張指引</div>
+                <div class="mode-brief">
+                    抽一張牌，給你今天／這件事情的一個核心提醒。<br />
+                    適合心情指引、簡單抉擇，或只是想聽聽宇宙給的小訊息。
+                </div>
+            </label>
+
+            <!-- 模式 2：三張牌－時間線 -->
+            <label class="mode-card" data-mode="timeline">
+                <input type="radio" name="DrawMode" value="timeline" />
+                <div class="mode-tag">適合：事情的發展</div>
+                <div class="mode-name">三張牌・時間線</div>
+                <div class="mode-brief">
+                    過去 ／ 現在 ／ 可能的未來。<br />
+                    適合想看一件事情的來龍去脈：例如感情發展、求學／工作下一步等。
+                </div>
+            </label>
+
+            <!-- 模式 3：三張牌－關係解析 -->
+            <label class="mode-card" data-mode="relationship">
+                <input type="radio" name="DrawMode" value="relationship" />
+                <div class="mode-tag">適合：感情與人際</div>
+                <div class="mode-name">三張牌・關係解析</div>
+                <div class="mode-brief">
+                    第一張代表你、第二張代表對方、第三張代表這段關係的走向。<br />
+                    適合用在感情、朋友、職場同事等互動主題。
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="draw-footer">
+        <button type="button" class="btn-secondary" onclick="document.getElementById('questionInput').value=''">
+            清空問題
+        </button>
+        <button type="button" class="btn-primary" id="startDrawBtn">
+            準備好了，開始抽牌
+        </button>
+    </div>
+</div>
+
+<!-- ========== 卡牌扇形動畫區（按下開始抽牌後顯示） ========== -->
+<div id="cardFanSection" class="card-fan-section hidden">
+    <div class="card-fan-title">請在心中默念你的問題…</div>
+    <div class="card-fan-subtitle">卡牌正在就位，會依序展開成一整個大扇形，等等讓你選牌。</div>
+
+    <div class="card-fan" id="cardFan">
+        @* 這裡一次產生 78 張牌 *@
+        @for (int i = 0; i < Model.Count; i++)
+        {
+            var card = Model[i];
+
+            // 假設你的牌圖放在 /images/TarotCards/ 底下
+            // 例如 /images/TarotCards/maj_00.jpg
+            var imgUrl = Url.Content("~/images/" + card.ImageName);
+
+            <div class="fan-card"
+                 data-card-index="@i"
+                 data-card-id="@card.Id"
+                 data-front="@imgUrl"
+                 data-name="@card.Name"
+                 tabindex="0"
+                 role="button"
+                 aria-label="@card.Name">
+                <div class="tarot-shell">
+                    <div class="tarot-inner">
+                        <div class="tarot-face tarot-back"></div>
+                        <div class="tarot-face tarot-front"></div>
+                    </div>
+                </div>
+            </div>
+        }
+
+
+    </div>
+
+    <p class="card-draw-count">
+        本次占卜請從中抽出 <span id="drawCountText">？</span> 張牌。
+    </p>
+
+    <div id="pickedArea" class="picked-area hidden">
+        <div class="picked-title">你抽到的牌</div>
+
+        <div id="pickedSlots" class="picked-slots" data-count="3">
+            <div class="picked-slot" data-slot="left">
+                <div class="slot-label" id="slotLabelLeft">左</div>
+                <div class="slot-card"></div>
+                <div class="slot-name"></div>
+            </div>
+
+            <div class="picked-slot" data-slot="center">
+                <div class="slot-label" id="slotLabelCenter">中</div>
+                <div class="slot-card"></div>
+                <div class="slot-name"></div>
+            </div>
+
+            <div class="picked-slot" data-slot="right">
+                <div class="slot-label" id="slotLabelRight">右</div>
+                <div class="slot-card"></div>
+                <div class="slot-name"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="analysisSection" class="analysis-area hidden">
+        <button type="button" id="btnAnalysis" class="btn-primary analysis-btn">
+            查看解析
+        </button>
+    </div>
+    <form id="analysisForm"
+          asp-controller="Tarot"
+          asp-action="Analysis"
+          method="post">
+        <input type="hidden" name="Question" id="hfQuestion" />
+        <input type="hidden" name="Mode" id="hfMode" />
+        <input type="hidden" name="CardsJson" id="hfCards" />
+    </form>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+            const questionInput = document.getElementById("questionInput");
+
+    const analysisForm = document.getElementById("analysisForm");
+    const hfQuestion   = document.getElementById("hfQuestion");
+    const hfMode       = document.getElementById("hfMode");
+    const hfCards      = document.getElementById("hfCards");
+
+        const ruleModal = document.getElementById("ruleModal");
+        const ruleCloseBtn = document.getElementById("ruleCloseBtn");
+        const drawFormSection = document.getElementById("drawFormSection");
+        const cardFanSection = document.getElementById("cardFanSection");
+        const drawCountText = document.getElementById("drawCountText");
+
+        // ====== 卡片 DOM + 洗牌 ======
+        const fanContainer = document.getElementById("cardFan");
+        const fanCards = Array.from(document.querySelectorAll("#cardFan .fan-card"));
+
+        // Fisher–Yates 洗牌
+        for (let i = fanCards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [fanCards[i], fanCards[j]] = [fanCards[j], fanCards[i]];
+        }
+        // 依新順序插回 DOM
+        fanCards.forEach(card => fanContainer.appendChild(card));
+
+        // ====== 抽出結果區 ======
+        const pickedArea = document.getElementById("pickedArea");
+        const pickedSlots = document.getElementById("pickedSlots");
+        const slotLeft   = document.querySelector('.picked-slot[data-slot="left"] .slot-card');
+        const slotCenter = document.querySelector('.picked-slot[data-slot="center"] .slot-card');
+        const slotRight  = document.querySelector('.picked-slot[data-slot="right"] .slot-card');
+
+        const labelLeft   = document.getElementById("slotLabelLeft");
+        const labelCenter = document.getElementById("slotLabelCenter");
+        const labelRight  = document.getElementById("slotLabelRight");
+
+        const nameLeft   = document.querySelector('.picked-slot[data-slot="left"] .slot-name');
+        const nameCenter = document.querySelector('.picked-slot[data-slot="center"] .slot-name');
+        const nameRight  = document.querySelector('.picked-slot[data-slot="right"] .slot-name');
+
+        const analysisSection = document.getElementById("analysisSection");
+        const analysisButton  = document.getElementById("btnAnalysis");
+
+        const MOVE_MS = 900;
+        const FLIP_MS = 650;
+
+    let requiredCount = 0;
+    let pickedCount   = 0;
+    let animating     = false;
+    let currentMode   = "single";
+
+    // 改成存完整資訊：id / 名稱 / 正逆位 / 位置
+    let pickedCards   = [];
+
+
+        // ====== 幫每張牌設定正面圖 + 正/逆位 + 事件 ======
+        fanCards.forEach((card, i) => {
+            const frontUrl = card.dataset.front;
+            if (frontUrl) {
+                card.style.setProperty("--front-image", `url('${frontUrl}')`);
+            } else {
+                card.style.setProperty(
+                    "--front-image",
+                    "radial-gradient(circle at 30% 30%, #f6d365, #fda085)"
+                );
+            }
+
+            card.style.zIndex = String(100 + i);
+
+            // 正位 / 逆位 50% 機率
+            const orientation = Math.random() < 0.5 ? "upright" : "reversed";
+            card.dataset.orientation = orientation;
+
+            card.addEventListener("click", () => pickCard(card));
+            card.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    pickCard(card);
+                }
+            });
+        });
+
+        // ====== 規則視窗關閉 ======
+        ruleCloseBtn.addEventListener("click", () => {
+            ruleModal.classList.add("hidden");
+            drawFormSection.classList.remove("hidden");
+        });
+
+        // 抽牌模式卡片：整張可點
+        document.querySelectorAll(".mode-card").forEach(card => {
+            card.addEventListener("click", () => {
+                document.querySelectorAll(".mode-card").forEach(c => c.classList.remove("active"));
+                card.classList.add("active");
+                const radio = card.querySelector("input[type='radio']");
+                if (radio) radio.checked = true;
+            });
+        });
+
+        // 預設先選「單張指引」
+        const defaultCard = document.querySelector(".mode-card[data-mode='single']");
+        if (defaultCard) {
+            defaultCard.classList.add("active");
+            const defaultRadio = defaultCard.querySelector("input[type='radio']");
+            if (defaultRadio) defaultRadio.checked = true;
+        }
+
+        // ====== 開始抽牌 ======
+        document.getElementById("startDrawBtn").addEventListener("click", () => {
+            const question = document.getElementById("questionInput").value.trim();
+            const selectedRadio = document.querySelector("input[name='DrawMode']:checked");
+            const selectedMode = selectedRadio ? selectedRadio.value : null;
+
+            if (!question) {
+                alert("請先寫下你這次想問的問題喔！");
+                return;
+            }
+            if (!selectedMode) {
+                alert("請先選擇一種抽牌模式。");
+                return;
+            }
+
+            let drawCount = 1;
+            if (selectedMode === "timeline" || selectedMode === "relationship") {
+                drawCount = 3;
+            }
+            if (drawCountText) {
+                drawCountText.textContent = drawCount.toString();
+            }
+
+            drawFormSection.classList.add("hidden");
+            cardFanSection.classList.remove("hidden");
+
+            resetPicking(drawCount, selectedMode);
+            playCardEntrance();
+        });
+
+        // ====== 扇形進場動畫 ======
+        function playCardEntrance() {
+            const total = fanCards.length;
+            if (!total) return;
+
+            const maxAngle = 32;
+            const maxShift = 520;
+            const delayPerCard = 40;
+
+            fanCards.forEach((card, index) => {
+                const t = (total === 1) ? 0 : (index / (total - 1) - 0.5); // -0.5 ~ 0.5
+                const angle = t * (maxAngle * 2);
+                const shift = t * maxShift;
+
+                const nt = t * 2; // -1 ~ 1
+                const baseLift = -75;
+                const curveStrength = 15;
+                const lift = baseLift - curveStrength * (1 - nt * nt);
+
+                card.style.setProperty("--angle", angle + "deg");
+                card.style.setProperty("--shift", shift + "px");
+                card.style.setProperty("--lift", lift + "%");
+
+                card.classList.remove("show");
+                setTimeout(() => {
+                    card.classList.add("show");
+                }, delayPerCard * index);
+            });
+        }
+
+        // ====== UI 初始化 / 重設 ======
+        function setupPickedUI(mode, drawCount) {
+            pickedArea.classList.remove("hidden");
+            pickedSlots.dataset.count = String(drawCount);
+
+            [slotLeft, slotCenter, slotRight].forEach(s => s.innerHTML = "");
+
+            if (nameLeft)   nameLeft.textContent = "";
+            if (nameCenter) nameCenter.textContent = "";
+            if (nameRight)  nameRight.textContent = "";
+
+            if (mode === "timeline") {
+                labelLeft.textContent = "過去";
+                labelCenter.textContent = "現在";
+                labelRight.textContent = "未來";
+            } else if (mode === "relationship") {
+                labelLeft.textContent = "自己";
+                labelCenter.textContent = "對方";
+                labelRight.textContent = "走向";
+            } else {
+                labelLeft.textContent = "";
+                labelCenter.textContent = "指引";
+                labelRight.textContent = "";
+            }
+        }
+
+        function resetPicking(drawCount, mode) {
+    requiredCount = drawCount;
+    pickedCount   = 0;
+    animating     = false;
+    currentMode   = mode;
+    pickedCards   = [];
+
+            fanCards.forEach(c => {
+                c.classList.remove("picked", "disabled", "is-flipped");
+                c.style.opacity = "";
+            });
+
+            if (analysisSection) {
+                analysisSection.classList.add("hidden");
+            }
+
+            setupPickedUI(mode, drawCount);
+        }
+
+        function getSlotByOrder(orderIndex) {
+            if (requiredCount === 1) return slotCenter;
+            const map = [slotLeft, slotCenter, slotRight];
+            return map[orderIndex] || slotCenter;
+        }
+            // 回傳這張牌在牌陣中的意義位置（之後 AI 用得上）
+    function getPositionKey(orderIndex) {
+        if (currentMode === "timeline") {
+            return ["過去", "現在", "未來"][orderIndex] || "";
+        }
+        if (currentMode === "relationship") {
+            return ["自己", "對方", "關係走向"][orderIndex] || "";
+        }
+        // 單張指引
+        return "指引";
+    }
+
+
+        // ====== 點擊抽牌 ======
+        function pickCard(card) {
+            if (animating) return;
+            if (!card.classList.contains("show")) return;
+            if (pickedCount >= requiredCount) return;
+            if (card.classList.contains("picked") || card.classList.contains("disabled")) return;
+
+            animating = true;
+
+            const orderIndex = pickedCount;
+            const destSlot = getSlotByOrder(orderIndex);
+            const cardName    = card.dataset.name || "";
+const cardId      = card.dataset.cardId || null;
+const orientation = card.dataset.orientation || "upright";
+
+// 這張牌在牌陣中的位置（過去/現在/未來 或 自己/對方/走向...）
+const positionKey = getPositionKey(orderIndex);
+
+if (cardId) {
+    pickedCards.push({
+        id: parseInt(cardId, 10),
+        name: cardName,
+        orientation: orientation, // upright / reversed
+        position: positionKey
+    });
+}
+            card.classList.add("picked");
+
+            const startRect = card.getBoundingClientRect();
+            const destRect = destSlot.getBoundingClientRect();
+
+            const clone = card.cloneNode(true);
+            if (orientation === "reversed") {
+                const frontFaces = clone.querySelectorAll(".tarot-front");
+                frontFaces.forEach(f => f.classList.add("reversed"));
+            }
+
+            clone.classList.remove("picked");
+            clone.classList.add("floating");
+            clone.style.position = "fixed";
+            clone.style.left = startRect.left + "px";
+            clone.style.top = startRect.top + "px";
+            clone.style.width = startRect.width + "px";
+            clone.style.height = startRect.height + "px";
+            clone.style.margin = "0";
+            clone.style.zIndex = "2000";
+            clone.style.pointerEvents = "none";
+            clone.style.transform = "translate(0px, 0px) scale(1)";
+            clone.style.transition = `transform ${MOVE_MS}ms cubic-bezier(.2,.9,.2,1)`;
+
+            document.body.appendChild(clone);
+
+            const startCx = startRect.left + startRect.width / 2;
+            const startCy = startRect.top + startRect.height / 2;
+            const destCx  = destRect.left + destRect.width / 2;
+            const destCy  = destRect.top + destRect.height / 2;
+
+            const dx = destCx - startCx;
+            const dy = destCy - startCy;
+            const scale = destRect.width / startRect.width;
+
+            if (requiredCount === 1) {
+                // 單張：先移到中間 → 再翻開
+                requestAnimationFrame(() => {
+                    clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+                });
+
+                setTimeout(() => {
+                    clone.classList.add("is-flipped");
+                }, MOVE_MS);
+
+                setTimeout(() => finalizeToSlot(clone, destSlot, true, cardName, orientation),
+                    MOVE_MS + FLIP_MS + 60);
+            } else {
+                // 三張：先翻面 → 再移到底部
+                setTimeout(() => {
+                    clone.classList.add("is-flipped");
+                }, 30);
+
+                setTimeout(() => {
+                    clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+                }, FLIP_MS);
+
+                setTimeout(() => finalizeToSlot(clone, destSlot, true, cardName, orientation),
+                    FLIP_MS + MOVE_MS + 60);
+            }
+        }
+
+        function finalizeToSlot(clone, destSlot, flipped, cardName, orientation) {
+            const finalCard = clone.cloneNode(true);
+            finalCard.classList.remove("floating");
+            finalCard.classList.add("result-card");
+            finalCard.style.position = "";
+            finalCard.style.left = "";
+            finalCard.style.top = "";
+            finalCard.style.width = "";
+            finalCard.style.height = "";
+            finalCard.style.margin = "";
+            finalCard.style.zIndex = "";
+            finalCard.style.pointerEvents = "none";
+            finalCard.style.transition = "";
+            finalCard.style.transform = "";
+
+            if (flipped) finalCard.classList.add("is-flipped");
+
+            if (orientation === "reversed") {
+                const frontFaces = finalCard.querySelectorAll(".tarot-front");
+                frontFaces.forEach(f => f.classList.add("reversed"));
+            }
+
+            destSlot.innerHTML = "";
+            destSlot.appendChild(finalCard);
+
+                const slotElem = destSlot.closest(".picked-slot");
+    if (slotElem) {
+        const nameLabel = slotElem.querySelector(".slot-name");
+        if (nameLabel) {
+            const orientationText =
+                orientation === "reversed" ? "（逆位）" : "（正位）";
+
+            nameLabel.textContent = `${cardName}${orientationText}`;
+        }
+    }
+
+
+            clone.remove();
+
+            pickedCount++;
+            animating = false;
+
+            if (pickedCount >= requiredCount) {
+                fanCards.forEach(c => {
+                    if (!c.classList.contains("picked")) c.classList.add("disabled");
+                });
+
+                if (analysisSection) {
+                    analysisSection.classList.remove("hidden");
+                }
+
+                playShineEffect();
+            }
+        }
+
+        // ====== 抽完後光條特效 ======
+        function playShineEffect() {
+            const orderSlots = [];
+            if (requiredCount === 1) {
+                orderSlots.push(slotCenter);
+            } else {
+                orderSlots.push(slotLeft, slotCenter, slotRight);
+            }
+
+            orderSlots.forEach((slot, index) => {
+                if (!slot) return;
+                const delay = index * 450;
+                setTimeout(() => {
+                    startShineOnSlot(slot);
+                }, delay);
+            });
+        }
+
+        function startShineOnSlot(slot) {
+            const shell = slot.querySelector(".result-card .tarot-shell");
+            if (!shell) return;
+
+            const bar = document.createElement("div");
+            bar.className = "shine-bar";
+            shell.appendChild(bar);
+
+            requestAnimationFrame(() => {
+                bar.classList.add("run");
+            });
+
+            setTimeout(() => {
+                bar.remove();
+            }, 900);
+        }
+
+            if (analysisButton) {
+        analysisButton.addEventListener("click", () => {
+            if (!pickedCards.length) {
+                alert("請先完成抽牌，再查看解析喔！");
+                return;
+            }
+
+            if (!analysisForm) {
+                console.error("analysisForm not found");
+                return;
+            }
+
+            // 填入隱藏欄位
+            hfQuestion.value = (questionInput?.value || "").trim();
+            hfMode.value     = currentMode;
+            hfCards.value    = JSON.stringify(pickedCards);
+
+            // 送出表單，導到 /Tarot/Analysis
+            analysisForm.submit();
+        });
+    }
+
+    });
+        // ===== 滑鼠移動星星特效 =====
+    let lastStarTime = 0;
+
+    document.addEventListener("mousemove", (e) => {
+        const now = Date.now();
+
+        // 控制出現頻率（避免太多）
+        if (now - lastStarTime < 25) return;
+        lastStarTime = now;
+
+        const star = document.createElement("div");
+        star.className = "mouse-star";
+
+        const size = Math.random() * 6 + 6; // 6 ~ 12px
+        star.style.width = size + "px";
+        star.style.height = size + "px";
+
+        // 微隨機偏移，讓它更自然
+        const offsetX = (Math.random() - 0.5) * 10;
+        const offsetY = (Math.random() - 0.5) * 10;
+
+        star.style.left = e.clientX + offsetX + "px";
+        star.style.top = e.clientY + offsetY + "px";
+
+        document.body.appendChild(star);
+
+        // 動畫結束後移除
+        setTimeout(() => {
+            star.remove();
+        }, 800);
+    });
+
+</script>

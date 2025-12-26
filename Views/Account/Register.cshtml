@@ -1,0 +1,324 @@
+﻿@model 占卜.Models.UserLoginModel
+@using 占卜.Models
+@using Microsoft.Data.SqlClient
+@using System.Text.Json
+
+@{
+    var tarotCards = ViewBag.TarotCards as List<TarotCard> ?? new();
+    var frontImages = tarotCards
+        .Select(t => Url.Content("~/images/" + t.ImageName))
+        .ToList();
+
+    var backImage = Url.Content("~/images/CardBacks.jpg");
+}
+
+
+@{
+    ViewData["Title"] = "註冊新帳號";
+}
+
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        font-family: 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #22153b 0%, #050313 55%, #020008 100%);
+        color: #fdf4ff;
+    }
+
+    .register-root {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 16px;
+    }
+
+    .register-card {
+        position: relative;
+        width: min(460px, 100%);
+        padding: 32px 30px 26px;
+        border-radius: 24px;
+        background: radial-gradient(circle at top left, rgba(92, 63, 168, 0.96), rgba(11, 5, 30, 0.98));
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(150, 120, 255, 0.35);
+        border: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(8px);
+    }
+
+    .register-badge {
+        position: absolute;
+        right: 18px;
+        top: 18px;
+        font-size: 11px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,255,255,0.25);
+        letter-spacing: 2px;
+        opacity: 0.9;
+    }
+
+    .register-title {
+        font-size: 26px;
+        letter-spacing: 6px;
+        margin-bottom: 6px;
+    }
+
+    .register-subtitle {
+        font-size: 14px;
+        opacity: 0.85;
+        margin-bottom: 20px;
+        line-height: 1.7;
+    }
+
+    .register-field {
+        margin-bottom: 16px;
+    }
+
+    .register-label {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 6px;
+        letter-spacing: 2px;
+    }
+
+    .register-input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.25);
+        background: rgba(4,2,14,0.95);
+        color: #fff;
+        font-size: 14px;
+    }
+
+        .register-input:focus {
+            outline: none;
+            border-color: #f6d365;
+            box-shadow: 0 0 14px rgba(246,211,101,0.7);
+        }
+
+    .register-error {
+        color: #ff9f9f;
+        margin-bottom: 12px;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    .register-btn {
+        width: 100%;
+        margin-top: 4px;
+        padding: 10px 0;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 15px;
+        letter-spacing: 4px;
+        background: linear-gradient(90deg,#f6d365,#fda085);
+        color: #241323;
+        box-shadow: 0 0 22px rgba(253,160,133,0.9);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+        .register-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 26px rgba(253,160,133,1);
+        }
+
+    .register-footer {
+        margin-top: 16px;
+        font-size: 13px;
+        text-align: center;
+        opacity: 0.9;
+    }
+
+        .register-footer a {
+            color: #f6d365;
+            text-decoration: underline;
+        }
+
+            .register-footer a:hover {
+                color: #ffecc4;
+            }
+
+    /* ===============================
+       背景：多條斜排流動塔羅牌
+       =============================== */
+    .card-flow-bg {
+        position: fixed;
+        inset: -220px;
+        z-index: 1;
+        pointer-events: none;
+        display: flex;
+        justify-content: center;
+        gap: 26px;
+    }
+
+    .card-flow-row {
+        position: relative;
+        width: 190px;
+        height: 160vh;
+    }
+
+    .card-flow-track {
+        position: absolute;
+        top: -420px;
+        left: 50%;
+        display: flex;
+        flex-direction: column;
+        transform-origin: center;
+        transform: translateX(-50%) rotate(-18deg);
+    }
+
+    .card-flow-card {
+        width: 170px;
+        height: 250px;
+        border-radius: 16px;
+        margin-bottom: 8px;
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 10px 26px rgba(0,0,0,.9);
+        opacity: 0.55;
+        filter: brightness(0.85) saturate(0.9);
+    }
+
+    /* 讓註冊卡片浮在牌上 */
+    .register-root {
+        position: relative;
+        z-index: 5;
+    }
+
+</style>
+<!-- 背景：斜排流動塔羅牌（與登入頁同款） -->
+<div class="card-flow-bg" id="cardFlowBg">
+    @for (int r = 0; r < 9; r++)
+    {
+        bool useFront = (r % 2 == 0);
+
+        <div class="card-flow-row" data-row="@r">
+            <div class="card-flow-track">
+                @for (int c = 0; c < 8; c++)
+                {
+                    <div class="card-flow-card"></div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+
+<div class="register-root">
+    <div class="register-card">
+        <div class="register-badge">ONLINE TAROT</div>
+
+        <div class="register-title">註冊新旅人</div>
+        <div class="register-subtitle">
+            在踏入星語塔羅世界之前，先建立你的專屬帳號。<br />
+            之後每一次的提問與解牌，都會紀錄在你的命運旅程中。
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="register-error">@ViewBag.Error</div>
+        }
+
+        <form method="post">
+            <div class="register-field">
+                <label class="register-label">設定帳號 / Username</label>
+                <input class="register-input"
+                       type="text"
+                       name="Username"
+                       value="@Model?.Username"
+                       required />
+            </div>
+
+            <div class="register-field">
+                <label class="register-label">設定密碼 / Password</label>
+                <input class="register-input"
+                       type="password"
+                       name="Password"
+                       required />
+            </div>
+
+            <button type="submit" class="register-btn">確認註冊</button>
+        </form>
+
+        <div class="register-footer">
+            已經有帳號了嗎？<a asp-action="Login">返回登入</a>
+        </div>
+    </div>
+</div>
+<script>
+    const tarotFrontImages = @Html.Raw(JsonSerializer.Serialize(frontImages));
+    const tarotBackImage = '@backImage';
+
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const rows = document.querySelectorAll('.card-flow-row');
+
+        rows.forEach((row, rowIndex) => {
+            const useFront = rowIndex % 2 === 0;
+            const cards = row.querySelectorAll('.card-flow-card');
+
+            cards.forEach(card => {
+                if (useFront) {
+                    const img = tarotFrontImages[
+                        Math.floor(Math.random() * tarotFrontImages.length)
+                    ];
+                    card.style.backgroundImage = `url('${img}')`;
+                } else {
+                    card.style.backgroundImage = `url('${tarotBackImage}')`;
+                }
+            });
+        });
+
+        startCardFlow();
+    });
+
+    function startCardFlow() {
+        const tracks = document.querySelectorAll('.card-flow-track');
+
+        const CARD_HEIGHT = 250;
+        const CARD_GAP = 8;
+        const STEP = CARD_HEIGHT + CARD_GAP;
+        const SPEED = 30;
+
+        const states = Array.from(tracks).map((track, i) => ({
+            track,
+            dir: i % 2 === 0 ? 1 : -1,
+            offset: 0
+        }));
+
+        let last = performance.now();
+
+        function tick(now) {
+            const dt = (now - last) / 1000;
+            last = now;
+
+            states.forEach(s => {
+                s.offset += SPEED * s.dir * dt;
+
+                s.track.style.transform =
+                    `translateX(-50%) rotate(-18deg) translateY(${s.offset}px)`;
+
+                if (s.dir > 0 && s.offset >= STEP) {
+                    s.offset -= STEP;
+                    s.track.appendChild(s.track.firstElementChild);
+                } else if (s.dir < 0 && s.offset <= -STEP) {
+                    s.offset += STEP;
+                    s.track.insertBefore(
+                        s.track.lastElementChild,
+                        s.track.firstElementChild
+                    );
+                }
+            });
+
+            requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+    }
+</script>

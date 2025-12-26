@@ -1,0 +1,637 @@
+﻿@model List<占卜.ViewModels.TarotHistoryItemViewModel>
+
+@{
+    ViewData["Title"] = "抽牌歷史紀錄";
+}
+
+<style>
+
+
+    .history-page {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    .history-title {
+        text-align: center;
+        font-size: 32px;
+        letter-spacing: 6px;
+        margin-bottom: 24px;
+    }
+
+    .history-item {
+        background: radial-gradient( circle at top, rgba(60, 40, 110, 0.75), rgba(15, 8, 30, 0.75) );
+        backdrop-filter: blur(2px);
+        border-radius: 16px;
+        padding: 16px 20px;
+        margin-bottom: 18px;
+        border: 1px solid rgba(255,255,255,0.15);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.8);
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+        .history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 26px rgba(0,0,0,0.9);
+        }
+
+    .history-date {
+        font-size: 12px;
+        opacity: .75;
+        margin-bottom: 6px;
+    }
+
+    .history-question {
+        font-size: 15px;
+        margin-bottom: 8px;
+        line-height: 1.6;
+    }
+
+    .history-meta {
+        font-size: 13px;
+        opacity: .85;
+        margin-bottom: 8px;
+    }
+
+    .history-summary {
+        font-size: 14px;
+        line-height: 1.7;
+        opacity: .9;
+        margin-bottom: 10px;
+    }
+
+    .history-link {
+        text-align: right;
+    }
+
+        .history-link a {
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-decoration: none;
+            color: #f6d365;
+        }
+
+            .history-link a:hover {
+                text-decoration: underline;
+            }
+
+    .history-item-question {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #fdf4ff;
+    }
+
+    .history-item-meta {
+        font-size: 13px;
+        opacity: 0.9;
+        color: #e2d5ff;
+        margin-bottom: 6px;
+    }
+
+    .history-item-summary {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #f7f0ff;
+        opacity: 0.95;
+    }
+
+    /* ===== 歷史卡片裝飾 ===== */
+    .history-item {
+        position: relative;
+        overflow: hidden;
+    }
+
+        .history-item::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.06), transparent 60%);
+            pointer-events: none;
+        }
+
+    /* 時間點小標 */
+    .history-date {
+        color: #c9b8ff;
+    }
+
+    /* 查看完整解析 hover 效果 */
+    .history-link a {
+        transition: all .25s ease;
+    }
+
+        .history-link a:hover {
+            letter-spacing: 3px;
+            color: #ffd369;
+        }
+
+    .history-checkbox {
+        position: absolute;
+        top: 14px;
+        right: 18px;
+        font-size: 12px;
+        opacity: .85;
+    }
+
+        .history-checkbox input {
+            accent-color: #f6d365;
+            margin-right: 4px;
+        }
+
+
+    .history-actions {
+        margin-top: 40px;
+        text-align: center;
+    }
+
+    /* ===== 底部儀式操作列 ===== */
+    .history-actions {
+        margin-top: 56px;
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    /* 主行動：繼續抽牌（視覺焦點） */
+    .btn-main {
+        border: none;
+        padding: 12px 28px;
+        border-radius: 999px;
+        font-size: 15px;
+        letter-spacing: 3px;
+        cursor: pointer;
+        background: linear-gradient(135deg,#f6d365,#fda085);
+        color: #241323;
+        box-shadow: 0 0 26px rgba(246,211,101,.85);
+        text-decoration: none;
+        transition: all .3s ease;
+    }
+
+        .btn-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 34px rgba(246,211,101,1);
+        }
+
+    /* 次要行動：回首頁（幽靈按鈕） */
+    .btn-ghost {
+        padding: 12px 26px;
+        border-radius: 999px;
+        font-size: 14px;
+        letter-spacing: 2px;
+        color: #fdf4ff;
+        border: 1px solid rgba(255,255,255,.35);
+        background: rgba(255,255,255,.04);
+        text-decoration: none;
+        transition: all .25s ease;
+    }
+
+        .btn-ghost:hover {
+            background: rgba(255,255,255,.12);
+            box-shadow: 0 0 18px rgba(255,255,255,.25);
+        }
+
+    /* 危險行動：清除紀錄（低調但明確） */
+    .btn-clear {
+        padding: 12px 22px;
+        border-radius: 999px;
+        font-size: 13px;
+        letter-spacing: 2px;
+        color: #ffb4b4;
+        border: 1px solid rgba(255,107,107,.6);
+        background: rgba(255,107,107,.08);
+        cursor: pointer;
+        transition: all .25s ease;
+    }
+
+        .btn-clear:hover {
+            background: rgba(255,107,107,.18);
+            box-shadow: 0 0 18px rgba(255,107,107,.6);
+        }
+
+
+    .history-select {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        cursor: pointer;
+    }
+
+        .history-select input {
+            display: none;
+        }
+
+    .select-mark {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(246,211,101,.7);
+        border-radius: 4px;
+        display: inline-block;
+        transition: all .25s ease;
+    }
+
+    .history-select input:checked + .select-mark {
+        background: linear-gradient(135deg,#f6d365,#fda085);
+        box-shadow: 0 0 12px rgba(246,211,101,.8);
+    }
+
+    .history-item:has(input:checked) {
+        box-shadow: 0 0 28px rgba(246,211,101,.6);
+        border-color: rgba(246,211,101,.8);
+    }
+
+    /* ===== 封存儀式遮罩 ===== */
+    .ritual-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 2, 18, 0.75);
+        backdrop-filter: blur(6px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+    }
+
+        .ritual-overlay.show {
+            display: flex;
+        }
+
+    /* ===== 儀式卡片 ===== */
+    .ritual-modal {
+        background: radial-gradient(circle at top,#3b286a,#140b25);
+        border-radius: 20px;
+        padding: 28px 32px;
+        width: 320px;
+        text-align: center;
+        box-shadow: 0 0 40px rgba(246,211,101,.45);
+        animation: ritualIn .4s ease;
+    }
+
+    @@keyframes ritualIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(.95);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .ritual-title {
+        font-size: 18px;
+        letter-spacing: 3px;
+        margin-bottom: 10px;
+        color: #f6d365;
+    }
+
+    .ritual-text {
+        font-size: 14px;
+        line-height: 1.8;
+        opacity: .9;
+        margin-bottom: 20px;
+    }
+
+    .ritual-actions {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+    }
+
+    /* ===== 刪除動畫 ===== */
+    .history-item.removing {
+        animation: vanish .6s ease forwards;
+        position: relative;
+        overflow: hidden;
+    }
+
+    @@keyframes vanish {
+        to {
+            opacity: 0;
+            transform: scale(.92) translateY(-10px);
+        }
+    }
+
+    /* 金色粒子 */
+    .history-item.removing::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle, rgba(246,211,101,.9) 0%, transparent 60%), radial-gradient(circle, rgba(246,211,101,.7) 0%, transparent 60%);
+        background-size: 6px 6px, 4px 4px;
+        background-position: 20% 30%, 70% 60%;
+        animation: sparkle .6s ease forwards;
+        pointer-events: none;
+    }
+
+    @@keyframes sparkle {
+        to {
+            opacity: 0;
+            transform: scale(1.4);
+        }
+    }
+
+    /* 預設隱藏選取 */
+    .history-select.hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(.9);
+    }
+
+    /* 管理模式開啟 */
+    .history-page.manage .history-select {
+        opacity: 1;
+        pointer-events: auto;
+        transform: scale(1);
+        transition: all .25s ease;
+    }
+
+    /* 管理模式卡片提示 */
+    .history-page.manage .history-item {
+        border-color: rgba(246,211,101,.35);
+    }
+
+
+
+
+
+    /* ===============================
+       🔥 強烈差異版占卜背景
+       =============================== */
+
+    html, body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(180deg, #090312 0%, #1b0f2e 35%, #2b1950 55%, #14081f 100%) !important;
+        color: #fdf4ff;
+    }
+
+    /* 背景流光層（直接畫在 body 上） */
+    body {
+        background-image: radial-gradient(circle at 20% 20%, rgba(246,211,101,.25), transparent 40%), radial-gradient(circle at 80% 30%, rgba(180,120,255,.22), transparent 45%), radial-gradient(circle at 50% 80%, rgba(120,200,255,.18), transparent 50%);
+        background-attachment: fixed;
+    }
+
+    /* 強制主要內容透明 */
+    main,
+    .history-page,
+    .analysis-page,
+    .container,
+    .container-fluid {
+        background: transparent !important;
+        position: relative;
+        z-index: 2;
+    }
+
+    body {
+        outline: 5px solid red !important;
+    }
+
+
+
+
+    /* 🔮 占卜問題強化顯示 */
+    .history-item-question {
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        line-height: 1.3;
+        margin-bottom: 10px;
+        padding: 10px 14px;
+        border-left: 4px solid #f6d365;
+        border-radius: 8px;
+        background: linear-gradient( 90deg, rgba(246,211,101,0.18), rgba(246,211,101,0.05), transparent );
+        color: #fff;
+        text-shadow: 0 0 6px rgba(246,211,101,0.35);
+    }
+    /* ✨ 滑過歷史紀錄時，問題微微發光 */
+    .history-item {
+        transition: box-shadow .25s ease, transform .25s ease;
+    }
+
+        .history-item:hover .history-item-question {
+            color: #fff;
+            text-shadow: 0 0 6px rgba(246,211,101,0.45), 0 0 14px rgba(246,211,101,0.35), 0 0 24px rgba(246,211,101,0.25);
+            background: linear-gradient( 90deg, rgba(246,211,101,0.28), rgba(246,211,101,0.12), transparent );
+            border-left-color: #ffd369;
+        }
+
+    /* 平常狀態也要有過渡，才會柔順 */
+    .history-item-question {
+        transition: color .3s ease, text-shadow .3s ease, background .3s ease, border-color .3s ease;
+    }
+
+
+
+    /* 🌙 抽牌歷史紀錄－儀式標題美化 */
+    .history-title {
+        position: relative;
+        text-align: center;
+        font-size: 34px;
+        letter-spacing: 8px;
+        font-weight: 600;
+        margin: 40px 0 46px;
+        color: transparent;
+        /* 文字本體漸層 */
+        background: linear-gradient( 180deg, #fff6d8 0%, #f6d365 35%, #c9a6ff 70%, #ffffff 100% );
+        -webkit-background-clip: text;
+        background-clip: text;
+        text-shadow: 0 0 12px rgba(246,211,101,0.35), 0 0 28px rgba(180,120,255,0.25);
+    }
+
+        /* ✨ 標題下方星軌分隔線 */
+        .history-title::after {
+            content: "✦ ✧ ✦";
+            display: block;
+            margin-top: 16px;
+            font-size: 14px;
+            letter-spacing: 10px;
+            color: #f6d365;
+            opacity: 0.9;
+            text-shadow: 0 0 10px rgba(246,211,101,0.6), 0 0 20px rgba(246,211,101,0.4);
+        }
+
+        /* 🌌 標題背後的柔光聚焦 */
+        .history-title::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 420px;
+            height: 120px;
+            transform: translate(-50%, -50%);
+            background: radial-gradient( ellipse at center, rgba(246,211,101,0.25), rgba(180,120,255,0.18), transparent 70% );
+            filter: blur(28px);
+            z-index: -1;
+        }
+
+</style>
+<div class="history-page">
+    <div class="history-title">抽牌歷史紀錄</div>
+
+    @if (!Model.Any())
+    {
+        <p style="text-align:center; opacity:.7;">
+            尚無占卜紀錄
+        </p>
+    }
+    else
+    {
+        <form asp-controller="Tarot" asp-action="ClearHistory" method="post">
+
+            @foreach (var item in Model)
+            {
+                <div class="history-item">
+
+                    <!-- 勾選框 -->
+                    <label class="history-select hidden">
+                        <input type="checkbox"
+                               name="selectedIds"
+                               value="@item.SessionId" />
+                        <span class="select-mark"></span>
+                    </label>
+
+
+
+
+                    <div class="history-date">
+                        @item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
+                    </div>
+
+                    <div class="history-item-question">
+                        問題：@item.Question
+                    </div>
+
+                    <div class="history-item-meta">
+                        牌陣：@item.Mode ｜ 抽牌數：@item.DrawCount 張
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(item.AiSummary))
+                    {
+                        <div class="history-item-summary">
+                            @Html.Raw(Html.Encode(item.AiSummary).Replace("\n", "<br />"))
+                        </div>
+                    }
+
+                    <div class="history-link">
+                        <a asp-controller="Tarot"
+                           asp-action="HistoryDetail"
+                           asp-route-id="@item.SessionId"
+                           class="history-item-link">
+                            查看完整解析 →
+                        </a>
+                    </div>
+
+                </div>
+            }
+
+            <!-- ===== 底部操作（一定要在 foreach 外面） ===== -->
+            <div class="history-actions">
+
+                <button type="button"
+                        class="btn-clear"
+                        id="manageDelete">
+                    管理歷史紀錄
+                </button>
+
+                <a asp-controller="Tarot"
+                   asp-action="DrawCards"
+                   class="btn-main">
+                    繼續抽牌
+                </a>
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="btn-ghost">
+                    回到首頁
+                </a>
+
+            </div>
+
+
+
+
+
+        </form>
+    }
+
+    <!-- ===== 封存確認框 ===== -->
+    <div class="ritual-overlay" id="confirmOverlay">
+        <div class="ritual-modal">
+            <div class="ritual-title">是否封存這些記憶？</div>
+            <div class="ritual-text">
+                被選取的占卜紀錄將被封存，<br />
+                這些訊息將不再顯現於歷史之中。
+            </div>
+
+            <div class="ritual-actions">
+                <button type="button" class="btn-ghost" id="cancelDelete">
+                    取消
+                </button>
+                <button type="button" class="btn-main" id="confirmDelete">
+                    封存
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    const page = document.querySelector(".history-page");
+    const manageBtn = document.getElementById("manageDelete");
+    const overlay = document.getElementById("confirmOverlay");
+    const confirmBtn = document.getElementById("confirmDelete");
+    const cancelBtn = document.getElementById("cancelDelete");
+    const form = document.querySelector("form");
+
+    let manageMode = false;
+
+    manageBtn.addEventListener("click", () => {
+        const checked = document.querySelectorAll("input[name='selectedIds']:checked");
+
+        // ⭕ 尚未進入管理模式 → 進入
+        if (!manageMode) {
+            manageMode = true;
+            page.classList.add("manage");
+            manageBtn.textContent = "刪除選取的紀錄";
+            return;
+        }
+
+        // ⭕ 已在管理模式，但沒選任何東西 → 退出管理模式
+        if (checked.length === 0) {
+            manageMode = false;
+            page.classList.remove("manage");
+            manageBtn.textContent = "管理歷史紀錄";
+
+            // 清掉殘留勾選（保險）
+            document
+                .querySelectorAll("input[name='selectedIds']")
+                .forEach(cb => cb.checked = false);
+
+            return;
+        }
+
+        // ⭕ 已在管理模式 + 有選取 → 顯示確認框
+        overlay.classList.add("show");
+    });
+
+    // 取消封存
+    cancelBtn.addEventListener("click", () => {
+        overlay.classList.remove("show");
+    });
+
+    // 確認封存
+    confirmBtn.addEventListener("click", () => {
+        const checked = document.querySelectorAll("input[name='selectedIds']:checked");
+
+        checked.forEach(cb => {
+            cb.closest(".history-item").classList.add("removing");
+        });
+
+        setTimeout(() => {
+            form.submit();
+        }, 600);
+    });
+</script>

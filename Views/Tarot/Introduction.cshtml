@@ -1,0 +1,753 @@
+﻿@{
+    ViewData["Title"] = "Tarot Introduction";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0b0f2b, #000);
+            font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+            color: white;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        /* ===== 中央布局 ===== */
+        .center-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 2; /* 放到月亮上面 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .center-area {
+            position: relative;
+            width: 700px;
+            height: 500px;
+        }
+
+        h1 {
+            animation: titleGlow 4s ease-in-out infinite, titlePulse 6s ease-in-out infinite;
+            position: absolute;
+            top: 44%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 88px; /* ✅ 放大 */
+            letter-spacing: 14px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #f7ccff, #b8dbff, #e2b6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            animation: titleGlow 4s ease-in-out infinite;
+            z-index: 4;
+        }
+        @@keyframes titlePulse {
+            0% {
+                text-shadow: 0 0 20px rgba(200,160,255,0.4);
+            }
+
+            50% {
+                text-shadow: 0 0 50px rgba(220,180,255,1);
+            }
+
+            100% {
+                text-shadow: 0 0 20px rgba(200,160,255,0.4);
+            }
+        }
+
+        @@keyframes titleGlow {
+            0%, 100% {
+                text-shadow: 0 0 10px rgba(255,255,255,0.4);
+            }
+
+            50% {
+                text-shadow: 0 0 30px rgba(200,150,255,0.9);
+            }
+        }
+
+        /* ===== 按鈕共用樣式 ===== */
+        /* 外層按鈕區塊 */
+        /* ==== 外層容器（控制位置） ==== */
+        .tarot-btn {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            cursor: pointer;
+            z-index: 5;
+            text-decoration: none;
+        }
+
+        /* ==== 中心文字（神秘發光） ==== */
+        .btn-inner {
+            pointer-events: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 26px; /* ⭐ 文字變大 */
+            font-weight: 600;
+            letter-spacing: 6px; /* ⭐ 拉開字距更高級 */
+            line-height: 1.4;
+            color: rgba(255,255,255,0.95); /* ⭐ 更柔亮的白 */
+
+            background: radial-gradient( circle, rgba(255,255,255,0.18), rgba(180,140,255,0.10) );
+            box-shadow: 0 0 30px rgba(200,160,255,0.45), inset 0 0 16px rgba(255,255,255,0.22);
+            transition: transform 0.45s ease, box-shadow 0.45s ease;
+        }
+
+        /* Hover 特效更柔、更亮 */
+        .tarot-btn:hover .btn-inner {
+            transform: translate(-50%, -50%) scale(1.22);
+            box-shadow: 0 0 50px rgba(220,180,255,0.88), inset 0 0 25px rgba(255,255,255,0.35);
+        }
+
+        .tarot-btn::before,
+        .tarot-btn::after {
+            pointer-events: none;
+        }
+
+        /* ==== 外圈符文（旋轉） ==== */
+        .tarot-btn::before {
+            content: "";
+            position: absolute;
+            inset: -20px;
+            border-radius: 50%;
+            background: url('/images/runes-circle.png') center/contain no-repeat;
+            opacity: 0.65;
+            animation: runeSpin 12s linear infinite;
+            filter: drop-shadow(0 0 6px rgba(200,160,255,0.9));
+        }
+
+        /* Hover 時符文更亮 */
+        .tarot-btn:hover::before {
+            opacity: 1;
+            filter: drop-shadow(0 0 14px rgba(230,200,255,1));
+        }
+
+        /* 符文旋轉動畫 */
+        @@keyframes runeSpin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 外框水波紋能量 */
+        .tarot-btn::after {
+            content: "";
+            position: absolute;
+            inset: -10px;
+            border-radius: 90px;
+            border: 2px solid rgba(200,180,255,0.22);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .tarot-btn:hover::after {
+            opacity: 1;
+            animation: energyWave 1.6s infinite ease-out;
+        }
+
+        @@keyframes energyWave {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1.55);
+                opacity: 0;
+            }
+        }
+
+        .cursor-star {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,1), rgba(200,160,255,0.5), rgba(150,120,255,0));
+            opacity: 0.9;
+            transform: translate(-50%, -50%);
+            animation: starFade 0.8s ease-out forwards;
+            z-index: 9999;
+            filter: drop-shadow(0 0 6px rgba(220,200,255,0.9));
+        }
+
+        @@keyframes starFade {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.2);
+            }
+        }
+        .magic-star {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            opacity: 0.9;
+            transform: translate(-50%, -50%);
+            animation: starMove 1s ease-out forwards;
+            z-index: 99999;
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+
+        @@keyframes starMove {
+            0% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(0.2) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+
+        /* ===== 四方定位 ===== */
+        .top {
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .bottom {
+            bottom: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .left {
+            left: -200px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .right {
+            right: -200px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* =========================
+                   月相環（左右兩側）CSS
+                   使用圓環排放 + 每顆 moon 用遮罩模擬月相
+                   ========================= */
+/* ===== 月相裁切容器（只顯示四分之一圓） ===== */
+
+/* 月亮大圓容器：讓它夠大，不裁切 */
+        .moon-quarter {
+            position: fixed;
+            top: 50%;
+            width: 1000px;
+            height: 1000px;
+            transform: translateY(-50%);
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+
+        .left-moon {
+            left: 1600px;
+        }
+
+        .right-moon {
+            right: 1600px;
+        }
+
+
+
+        /* 左側顯示右半圓 */
+        .left-moon {
+            clip-path: inset(0 50% 0 0);
+        }
+
+        /* 右側顯示左半圓 */
+        .right-moon {
+            clip-path: inset(0 0 0 50%);
+        }
+
+
+/* 月亮旋轉 */
+.moon-wheel {
+    width: 100%;
+    height: 100%;
+    animation: rotateMoon 70s linear infinite;
+            filter: brightness(0.95) contrast(0.92) drop-shadow(0 0 10px rgba(160,160,255,0.28));
+            opacity: 0.92; /* ⭐ 整體更淡 */
+}
+
+/* 反向旋轉 */
+.moon-wheel.reverse {
+    animation-direction: reverse;
+}
+
+@@keyframes rotateMoon {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+        /* =========================================
+           Modal Overlay（彈窗外層）
+           ========================================= */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 30, 0.75);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 20; /* 保證在最上層 */
+        }
+
+            .modal-overlay.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+        /* =========================================
+           Modal Window（彈窗視窗）
+           ========================================= */
+        .modal-window {
+            width: 520px;
+            padding: 40px;
+            border-radius: 24px;
+            background: linear-gradient(160deg, rgba(40,40,80,0.95), rgba(20,20,40,0.95));
+            box-shadow: 0 0 60px rgba(170,130,255,0.9);
+            color: white;
+            transform: scale(0.7) translateY(40px);
+            opacity: 0;
+            animation: modalIn 0.6s forwards;
+            position: relative;
+        }
+
+        @@keyframes modalIn {
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* =========================================
+           Modal Title / Text 樣式
+           ========================================= */
+        .modal-window h2 {
+            font-size: 34px;
+            margin-bottom: 18px;
+            text-align: center;
+            background: linear-gradient(90deg,#f5baff,#a6d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-window p {
+            font-size: 18px;
+            line-height: 1.8;
+            letter-spacing: 1px;
+            text-align: justify;
+        }
+
+        /* =========================================
+           Close Button（關閉按鈕）
+           ========================================= */
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+            .modal-close:hover {
+                transform: scale(1.3) rotate(90deg);
+                opacity: 1;
+            }
+
+        /* =========================================
+           星空呼吸動畫（彈窗打開時）
+           ========================================= */
+        body.modal-open canvas {
+            animation: starPulse 3s ease-in-out infinite;
+        }
+
+        @@keyframes starPulse {
+            0% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.25);
+            }
+
+            100% {
+                filter: brightness(1);
+            }
+        }
+        /* ===== 水晶陣（出現在中央 TAROT 下方）===== */
+        .magic-circle {
+            position: absolute;
+            left: 50%;
+            top: 68%; /* 大概在 TAROT 字下面，你可以自己微調 */
+            transform: translate(-50%, -50%) scale(0.6);
+            width: 420px; /* 魔法陣大小 */
+            height: 420px;
+            background: url('/images/magic-circle.png') center/contain no-repeat;
+            opacity: 0; /* 一開始看不到 */
+            pointer-events: none;
+            z-index: 3; /* 在背景上、按鈕 / 文字下方 */
+            filter: drop-shadow(0 0 25px rgba(0,255,255,0.75));
+            transition: opacity .45s ease, transform .45s ease, filter .45s ease;
+        }
+
+            /* 顯示時：放大 + 開始呼吸 */
+            .magic-circle.active {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+                animation: magicCircleBreath 2.8s ease-in-out infinite;
+            }
+
+        @@keyframes magicCircleBreath {
+            0%, 100% {
+                filter: drop-shadow(0 0 28px rgba(0,255,255,0.7));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 60px rgba(0,255,255,1));
+            }
+        }
+
+
+    </style>
+</head>
+
+<body>
+
+    <canvas id="bgStarCanvas"></canvas>
+
+    <!-- 左右月相組（放在 canvas 之後） -->
+    <!-- 左側月相裁切 -->
+    <!-- 左側月相 -->
+    <div class="moon-quarter left-moon">
+        <img src="/images/circle-moon.png" class="moon-wheel">
+    </div>
+
+    <div class="moon-quarter right-moon">
+        <img src="/images/circle-moon.png" class="moon-wheel reverse">
+    </div>
+
+
+
+    <div class="center-wrapper">
+        <div class="center-area">
+
+            <a class="tarot-btn top" data-modal="principle">
+                <div class="btn-inner">塔羅的原理</div>
+            </a>
+
+            <a class="tarot-btn bottom" data-modal="taboo">
+                <div class="btn-inner">塔羅的禁忌</div>
+            </a>
+
+            <a class="tarot-btn left" data-modal="history">
+                <div class="btn-inner">塔羅牌的歷史</div>
+            </a>
+
+            <a class="tarot-btn right" href="@Url.Action("CardList", "Tarot")">
+                <div class="btn-inner">塔羅牌的涵義</div>
+            </a>
+
+            <h1>TAROT</h1>
+
+
+
+        </div>
+    </div>
+
+    <script>
+
+
+        const canvas = document.getElementById("bgStarCanvas");
+
+                        const COSMIC_COLORS = [
+            { h: 210, s: 90, l: 78 }, // 更亮藍
+            { h: 230, s: 85, l: 82 }, // 靛藍更亮
+            { h: 255, s: 92, l: 80 }, // 藍紫更鮮
+            { h: 280, s: 95, l: 84 }, // 紫色更亮
+            { h: 195, s: 88, l: 85 }, // 青藍點綴
+            { h: 0,   s: 0,  l: 95 }  // 幾乎白色亮星
+        ];
+
+        const ctx = canvas.getContext("2d");
+
+        let stars = [];
+        const STAR_COUNT = 2000;
+        const MOUSE_RADIUS = 120;
+        let mouse = { x: null, y: null };
+
+        function resize() {
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+        }
+
+        window.addEventListener("resize", resize);
+        window.addEventListener("mousemove", e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        resize();
+
+               // 放在最上面 canvas 那段附近就好
+        const COSMIC_HUES = [210, 230, 255, 280]; // 深藍、靛藍、紫藍、紫
+
+               function initStars() {
+            stars = [];
+            for (let i = 0; i < STAR_COUNT; i++) {
+
+                // 隨機挑一個宇宙色
+                const color = COSMIC_COLORS[Math.floor(Math.random() * COSMIC_COLORS.length)];
+
+                // 少數變成比較大的亮星
+                const isBig = Math.random() < 0.15; // 15% 大顆
+                const baseR = isBig
+                    ? 2.2 + Math.random() * 2.0   // 大顆 2.2 ~ 4.2
+                    : 0.8 + Math.random() * 1.8;  // 小顆 0.8 ~ 2.6
+
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: baseR,
+                    speed: Math.random() * 0.2 + 0.02,
+                    color: color
+                });
+            }
+        }
+
+
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    stars.forEach(s => {
+            let dx = mouse.x - s.x;
+            let dy = mouse.y - s.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            let glow = (mouse.x === null)
+                ? 0
+                : (dist < MOUSE_RADIUS ? (1 - dist / MOUSE_RADIUS) : 0);
+
+            // 星星大小：靠近滑鼠稍微放大
+            const radius = s.r + glow * 1.5;
+
+            const c = s.color;
+             const light = Math.min(c.l + glow * 20, 100);
+        // 滑鼠附近再多 +8% 亮度
+            const alpha = 0.55 + glow * 0.35;      // 越靠近越實心
+
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${c.h}, ${c.s}%, ${light}%, ${alpha})`;
+            ctx.fill();
+
+            // 星星慢慢往上飄
+            s.y -= s.speed;
+            if (s.y < 0) {
+                s.y = canvas.height;
+                s.x = Math.random() * canvas.width;
+            }
+        });
+
+            requestAnimationFrame(animate);
+        }
+
+        initStars();
+        animate();
+    </script>
+
+    <script>
+        document.addEventListener("mousemove", function (e) {
+            createStar(e.pageX, e.pageY);
+        });
+
+        function createStar(x, y) {
+            const star = document.createElement("div");
+            star.classList.add("cursor-star");
+
+            star.style.left = x + "px";
+            star.style.top = y + "px";
+
+            document.body.appendChild(star);
+
+            // 0.8 秒後自動移除
+            setTimeout(() => {
+                star.remove();
+            }, 800);
+        }
+    </script>
+
+    <script>
+        document.addEventListener("mousemove", function (e) {
+            for (let i = 0; i < 3; i++) {  // ⭐ 每次滑鼠移動製造 3 個粒子（可調整）
+                createMagicStar(e.clientX, e.clientY);
+            }
+        });
+
+        function createMagicStar(x, y) {
+
+            const star = document.createElement("div");
+            star.classList.add("magic-star");
+
+            // ⭐ 粒子大小
+            const size = Math.random() * 8 + 4; // 4–12 px
+            star.style.width = size + "px";
+            star.style.height = size + "px";
+
+            // ⭐ 隨機顏色（塔羅風）
+            const colors = [
+                "#f7c8ff",  // 粉紫
+                "#bcd3ff",  // 淡藍
+                "#d9b4ff",  // 粉紫亮
+                "#ffe6a8"   // 柔金
+            ];
+            star.style.background = colors[Math.floor(Math.random() * colors.length)];
+            star.style.color = star.style.background; // 用於 drop-shadow
+
+            // ⭐ 隨機擴散方向
+            const offsetX = (Math.random() - 0.5) * 60;
+            const offsetY = (Math.random() - 0.5) * 60;
+
+            star.animate(
+                [
+                    { transform: `translate(${x}px, ${y}px) scale(1)` },
+                    { transform: `translate(${x + offsetX}px, ${y + offsetY}px) scale(0.2)` }
+                ],
+                {
+                    duration: 900 + Math.random() * 400,
+                    easing: "ease-out",
+                    fill: "forwards"
+                }
+            );
+
+            document.body.appendChild(star);
+
+            setTimeout(() => star.remove(), 1300);
+        }
+    </script>
+
+
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-window">
+            <span class="modal-close">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <p id="modalContent"></p>
+        </div>
+    </div>
+
+    <script>
+            function typeWriter(element, text, speed = 30) {
+            element.textContent = "";
+            let i = 0;
+
+            function typing() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typing, speed);
+                }
+            }
+            typing();
+        }
+        const modalData = {
+            principle: {
+                title: "塔羅的原理",
+                content: "塔羅牌是一種透過象徵圖像與潛意識溝通的占卜工具。每一張牌都代表一種生命狀態或心理原型，占卜並非預測宿命，而是引導你看見當下的可能性與內在選擇。"
+            },
+            taboo: {
+                title: "塔羅的禁忌",
+                content: "塔羅講究尊重與專注。避免在情緒極度混亂、帶有惡意或反覆詢問相同問題時占卜。塔羅不是用來控制他人，也不是絕對答案，而是一面映照自我的鏡子。"
+            },
+            history: {
+                title: "塔羅牌的歷史",
+                content: "塔羅牌起源於中世紀歐洲，最初是紙牌遊戲。隨著神秘學、占星學與卡巴拉的融合，塔羅逐漸成為象徵系統豐富的占卜工具，流傳至今。"
+            }
+        };
+
+        const overlay = document.getElementById("modalOverlay");
+        const modalWindow = document.querySelector(".modal-window"); 
+        const titleEl = document.getElementById("modalTitle");
+        const contentEl = document.getElementById("modalContent");
+
+                document.querySelectorAll("[data-modal]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const key = btn.dataset.modal;
+
+                /* 標題直接換 */
+                titleEl.textContent = modalData[key].title;
+
+                /* ✅ 文字打字機效果 */
+                typeWriter(contentEl, modalData[key].content, 28);
+
+                /* ✅ 切換 modal 顏色主題 */
+                modalWindow.className = "modal-window modal-" + key;
+
+                /* ✅ 顯示 modal + 星空呼吸 */
+                overlay.classList.add("active");
+                document.body.classList.add("modal-open");
+            });
+        });
+
+
+        overlay.addEventListener("click", e => {
+            if (e.target === overlay || e.target.classList.contains("modal-close")) {
+                overlay.classList.remove("active");
+                document.body.classList.remove("modal-open");
+
+            }
+        });
+    </script>
+
+</body>
+</html>

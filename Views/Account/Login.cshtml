@@ -1,0 +1,547 @@
+﻿@model 占卜.Models.UserLoginModel
+@using 占卜.Models
+@using System.Collections.Generic
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "星語塔羅・登入";
+
+    // 先嘗試從 ViewBag 拿
+    var tarotCards = ViewBag.TarotCards as List<TarotCard>;
+
+    
+
+    // === 開場散牌用 ===
+    var rnd = new Random();
+    int totalCards = 120;
+
+    // === 背景三行斜排用 ===
+    // === 背景斜排用：多條牌帶把畫面鋪滿 ===
+    int rowCount = 9;      // 想更密可以改成 9 或 11
+    int cardsPerRow = 8;   // 每一條牌帶裡的牌數（上下疊的張數）
+
+    var frontImages = tarotCards.Select(t => Url.Content("~/images/" + t.ImageName)).ToList();
+    var backImage = Url.Content("~/images/CardBacks.jpg");
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap');
+
+    /* 讓動畫時畫面不能滑動 */
+    body.lock-scroll {
+        overflow: hidden;
+    }
+
+    /* ====== 整體背景底色 ====== */
+    html, body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #1f1140 0%, #05030c 55%, #020106 100%);
+        color: #fdf4ff;
+    }
+
+    /* ===============================
+           一開始覆蓋畫面的散亂塔羅牌（進場）
+           =============================== */
+    .intro-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: radial-gradient(circle at center, #090018, #000000);
+        overflow: hidden;
+    }
+
+    .intro-overlay-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .intro-card {
+        position: absolute;
+        width: 210px;
+        height: 360px;
+        border-radius: 14px;
+        box-shadow: 0 18px 32px rgba(0,0,0,.85);
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    /* ===============================
+       背景：多條斜排流動塔羅牌（上下接）
+       =============================== */
+    .card-flow-bg {
+        position: fixed;
+        inset: -220px;
+        z-index: 2;
+        pointer-events: none;
+        display: flex;
+        justify-content: center;
+        gap: 26px; /* ⭐ 行距：原本 60，改小就更密 */
+    }
+
+    .card-flow-row {
+        position: relative;
+        width: 190px; /* 一條牌帶的寬度 */
+        height: 160vh;
+        overflow: visible;
+    }
+
+    .card-flow-track {
+        position: absolute;
+        top: -420px;
+        left: 50%;
+        display: flex;
+        flex-direction: column; /* ⭐ 牌是「上下接」*/
+        transform-origin: center;
+        transform: translateX(-50%) rotate(-18deg) translateY(0);
+    }
+
+    .card-flow-card {
+        width: 170px;
+        height: 250px;
+        border-radius: 16px;
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 10px 26px rgba(0,0,0,0.9);
+        flex: 0 0 auto;
+        margin-bottom: 8px; /* ⭐ 同一條裡每張牌的間距，數字越小越緊 */
+        /* ⭐ 讓背景暗一點、不搶畫面 */
+        opacity: 0.55;
+        filter: brightness(0.88) saturate(0.9);
+    }
+
+
+
+    /* ===============================
+           登入主畫面（面板）
+           =============================== */
+    .login-root {
+        position: fixed;
+        inset: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        z-index: 5;
+        opacity: 0;
+        transform: translateY(40px) scale(0.98);
+        transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.25,.8,.25,1);
+    }
+
+        /* 顯示面板 */
+        .login-root.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+    /* 撥牌動畫尚未結束時先隱藏（不能點） */
+    .login-hidden {
+        opacity: 0;
+        transform: translateY(30px);
+        pointer-events: none;
+    }
+
+    .login-panel {
+        width: min(980px, 94%);
+        display: flex;
+        border-radius: 32px;
+        background: radial-gradient(circle at top left, rgba(160,120,255,.35), rgba(20,8,45,.95));
+        box-shadow: 0 0 80px rgba(0,0,0,.85), inset 0 0 40px rgba(255,255,255,.05);
+        border: 1px solid rgba(255,255,255,.12);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+    }
+
+    .login-left {
+        flex: 1.2;
+        padding: 56px 60px;
+        color: #fff;
+    }
+
+    .login-heading {
+        font-family: 'Cinzel', serif;
+        font-size: 38px;
+        letter-spacing: 6px;
+    }
+
+    .login-desc {
+        font-size: 15px;
+        line-height: 1.8;
+        opacity: 0.85;
+        margin-bottom: 32px;
+    }
+
+    .login-list {
+        list-style: disc;
+        padding-left: 22px;
+        line-height: 1.9;
+        opacity: 0.8;
+        font-size: 14px;
+    }
+
+    .login-right {
+        flex: 1;
+        padding: 44px 42px;
+        background: radial-gradient(circle at top, rgba(40,20,80,.95), rgba(8,3,20,.98));
+        border-left: 1px solid rgba(255,255,255,.08);
+        box-shadow: inset 0 0 30px rgba(0,0,0,.6);
+        color: #fff;
+    }
+
+    .login-form-title {
+        font-family: 'Cinzel', serif;
+        letter-spacing: 3px;
+        margin-bottom: 6px;
+    }
+
+    .login-right label {
+        display: block;
+        margin-top: 14px;
+        font-size: 14px;
+    }
+
+    .login-right input {
+        width: 100%;
+        padding: 12px 14px;
+        margin-top: 6px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.15);
+        background: rgba(5,2,18,.95);
+        color: #fff;
+    }
+
+    .login-right button {
+        margin-top: 26px;
+        width: 100%;
+        padding: 12px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(90deg,#ffd36a,#ffb36a);
+        color: #2a1a00;
+        font-size: 15px;
+        letter-spacing: 4px;
+        cursor: pointer;
+        box-shadow: 0 0 20px rgba(255,200,120,.9);
+    }
+
+    .login-error {
+        color: #ff6b81;
+        margin-top: 10px;
+        font-size: 13px;
+    }
+
+    .login-register {
+        margin-top: 14px;
+        font-size: 13px;
+    }
+
+        .login-register a {
+            color: #f6d365;
+            text-decoration: underline;
+        }
+</style>
+
+<!-- ===============================
+     進場塔羅牌覆蓋層（散亂 → 撥開）
+     =============================== -->
+@if (ViewBag.SkipIntro != true)
+{
+    <div id="introOverlay" class="intro-overlay">
+        <div class="intro-overlay-inner">
+            @if (tarotCards.Count > 0)
+            {
+                for (int i = 0; i < totalCards; i++)
+                {
+                    var card = tarotCards[i % tarotCards.Count];
+                    var imgUrl = Url.Content("~/images/" + card.ImageName);
+
+                    <div class="intro-card"
+                         data-name="@card.Name"
+                         style="background-image:url('@imgUrl');">
+                    </div>
+                }
+            }
+            else
+            {
+                var backUrlX = Url.Content("~/images/CardBacks.jpg");
+                for (int i = 0; i < 40; i++)
+                {
+                    <div class="intro-card" style="background-image:url('@backUrlX');"></div>
+                }
+            }
+        </div>
+    </div>
+}
+
+<!-- ===============================
+     背景：三行斜排流動塔羅牌
+     =============================== -->
+<div class="card-flow-bg" id="cardFlowBg">
+    @for (int r = 0; r < rowCount; r++)
+    {
+        bool useFront = (r % 2 == 0);   // 偶數列：正面牌；奇數列：牌背
+
+        <div class="card-flow-row" data-row="@r">
+            <div class="card-flow-track">
+                @for (int c = 0; c < cardsPerRow; c++)
+                {
+                    string imgUrl;
+
+                    if (useFront && frontImages.Any())
+                    {
+                        // 每一張牌在「這次載入」時就決定好圖，不會再被 JS 改掉
+                        var index = (r * cardsPerRow + c) % frontImages.Count;
+                        imgUrl = frontImages[index];
+                    }
+                    else
+                    {
+                        imgUrl = backImage;
+                    }
+
+                    <div class="card-flow-card" style="background-image:url('@imgUrl');"></div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+
+<!-- ===============================
+     登入主畫面
+     =============================== -->
+<div class="login-root login-hidden" id="loginPanel">
+    <div class="login-panel">
+
+        <!-- 左側介紹 -->
+        <div class="login-left">
+            <h1 class="login-heading">塔羅命運之門</h1>
+            <p class="login-desc">
+                登入您的專屬占卜空間，<br />
+                記錄每一次的提問與解讀結果。
+            </p>
+
+            <ul class="login-list">
+                <li>建立專屬於自己的占卜紀錄本</li>
+                <li>查看過去的牌陣與問題</li>
+                <li>追蹤內在狀態與心靈成長</li>
+            </ul>
+        </div>
+
+        <!-- 右側登入 -->
+        <div class="login-right">
+            <h2 class="login-form-title">使用者登入</h2>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="login-error">@ViewBag.Error</div>
+            }
+
+            <form method="post">
+                <label>帳號</label>
+                <input type="text" name="Username" value="@Model?.Username" required />
+
+                <label>密碼</label>
+                <input type="password" name="Password" required />
+
+                <button type="submit">登入</button>
+            </form>
+
+            <div class="login-register">
+                還沒有帳號嗎？
+                <a asp-action="Register" asp-controller="Account">點此註冊</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 把伺服器端的圖片路徑丟到 JS 陣列裡
+    const tarotFrontImages = @Html.Raw(JsonSerializer.Serialize(frontImages));
+    const tarotBackImage = '@backImage';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const overlay   = document.getElementById('introOverlay');
+        const loginRoot = document.querySelector('.login-root');
+
+        function startCardFlow() {
+        const bg = document.getElementById('cardFlowBg');
+        if (!bg) return;
+
+        const rows = Array.from(bg.querySelectorAll('.card-flow-row'));
+        if (rows.length === 0) return;
+
+        // ★ 1. 先幫每一張牌設定背景圖片（正反交錯）
+        rows.forEach(row => {
+            const rowIndex = parseInt(row.dataset.row || '0', 10);
+            const track = row.querySelector('.card-flow-track');
+            if (!track) return;
+
+            const cards = Array.from(track.querySelectorAll('.card-flow-card'));
+
+            // 偶數列用正面塔羅牌，奇數列用牌背
+            const useFront = (rowIndex % 2 === 0);
+
+            cards.forEach(card => {
+                if (useFront && tarotFrontImages.length > 0) {
+                    const img = tarotFrontImages[
+                        Math.floor(Math.random() * tarotFrontImages.length)
+                    ];
+                    card.style.backgroundImage = `url('${img}')`;
+                } else {
+                    card.style.backgroundImage = `url('${tarotBackImage}')`;
+                }
+            });
+        });
+
+        // ★ 2. 做「整條牌帶上下滑動」的動畫
+        const tracks = rows
+            .map(r => r.querySelector('.card-flow-track'))
+            .filter(t => t); // 避免 null
+
+        const CARD_HEIGHT = 250;      // 要跟 .card-flow-card 的 height 一樣
+        const CARD_GAP = 8;           // 要跟 .card-flow-card 的 margin-bottom 一樣
+        const STEP = CARD_HEIGHT + CARD_GAP;
+        const BASE_SPEED = 40;        // 流動速度，覺得太快可改小
+
+        const colStates = tracks.map((track, index) => ({
+            track,
+            dir: (index % 2 === 0) ? 1 : -1,   // 偶數列往下、奇數列往上
+            offset: 0,
+            angle: -18
+        }));
+
+        let last = performance.now();
+
+        function tick(now) {
+            const dt = (now - last) / 1000;
+            last = now;
+
+            colStates.forEach(s => {
+                const move = BASE_SPEED * s.dir * dt;
+                s.offset += move;
+
+                // 整條牌帶一起斜放再上下移動
+                s.track.style.transform =
+                    `translateX(-50%) rotate(${s.angle}deg) translateY(${s.offset}px)`;
+
+                // 無限循環：位移超過一張牌高，就把最上 / 最下那張移到另一端
+                if (s.dir > 0 && s.offset >= STEP) {
+                    s.offset -= STEP;
+                    const first = s.track.firstElementChild;
+                    if (first) {
+                        s.track.appendChild(first);
+                    }
+                } else if (s.dir < 0 && s.offset <= -STEP) {
+                    s.offset += STEP;
+                    const lastCard = s.track.lastElementChild;
+                    if (lastCard) {
+                        s.track.insertBefore(lastCard, s.track.firstElementChild);
+                    }
+                }
+            });
+
+            requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+    }
+
+
+
+
+        // ==== 登入面板出現 ====
+        function showLoginPanel() {
+            if (!loginRoot) return;
+
+            loginRoot.classList.remove('login-hidden');
+            loginRoot.classList.add('show');
+
+            // 0.5 秒後再啟動背景塔羅牌動畫
+            setTimeout(startCardFlow, 500);
+        }
+
+        // ====== 沒有開場動畫（例如登入失敗再回來） ======
+        if (!overlay) {
+            showLoginPanel();
+            return;
+        }
+
+        // ====== 以下是你原本散牌 → 撥開的動畫 ======
+        const cards = Array.from(overlay.querySelectorAll('.intro-card'));
+        if (cards.length === 0) {
+            overlay.style.display = 'none';
+            showLoginPanel();
+            return;
+        }
+
+        document.body.classList.add('lock-scroll');
+
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        // 1. 一載入就直接散滿整個畫面
+        cards.forEach(card => {
+            const x = Math.random() * (vw + 320) - 160;
+            const y = Math.random() * (vh + 320) - 160;
+            const rot = (Math.random() * 90) - 45;
+
+            card.dataset.x = x;
+            card.dataset.y = y;
+            card.dataset.rot = rot;
+
+            card.style.transition = 'none';
+            card.style.opacity = '1';
+            card.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+        });
+
+        requestAnimationFrame(() => {
+            cards.forEach(card => {
+                card.style.transition =
+                    'transform 0.6s cubic-bezier(.25,.8,.25,1), opacity 0.5s ease-out';
+            });
+        });
+
+        const stayDuration = 1000;
+
+        // 2. 停留後從中心往外撥開
+        setTimeout(() => {
+            cards.forEach((card, index) => {
+                const rect = card.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+
+                const x = parseFloat(card.dataset.x || '0');
+                const y = parseFloat(card.dataset.y || '0');
+                const rot = parseFloat(card.dataset.rot || '0');
+
+                const dx = (cx - vw / 2) * 2;
+                const dy = (cy - vh / 2) * 2;
+
+                const finalX = x + dx;
+                const finalY = y + dy;
+                const finalRot = rot + (Math.random() * 80 - 40);
+
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform =
+                        `translate(${finalX}px, ${finalY}px) rotate(${finalRot}deg)`;
+                }, 15 * index);
+            });
+
+            const totalOutTime = 300 + cards.length * 17;
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                document.body.classList.remove('lock-scroll');
+
+                showLoginPanel();
+            }, totalOutTime);
+
+        }, stayDuration);
+    });
+</script>

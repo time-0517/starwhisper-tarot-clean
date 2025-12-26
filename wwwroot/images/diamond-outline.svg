@@ -1,0 +1,8 @@
+<!--?xml version="1.0" encoding="UTF-8"?-->
+<svg width="300" height="160" viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- 透明背景 -->
+  <rect x="0" y="0" width="300" height="160" fill="none"></rect>
+
+  <!-- 菱形（中間空的，只描邊） -->
+  <polygon points="150,5 295,80 150,155 5,80" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round"></polygon>
+</svg>

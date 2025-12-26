@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - 占卜</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/占卜.styles.css" asp-append-version="true" />
+</head>
+<body>
+
+    <!-- ✨ 全站占卜背景 -->
+    <div class="arcane-bg">
+        <div class="arcane-stars"></div>
+        <div class="arcane-sigil"></div>
+    </div>
+
+    <!-- 🔮 導覽列 -->
+    <header class="site-header">
+        <nav class="navbar navbar-expand-sm navbar-dark navbar-transparent">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">占卜</a>
+
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 🌙 主內容 -->
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <!-- 🌓 Footer -->
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - 占卜
+        </div>
+    </footer>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+
+</html>
